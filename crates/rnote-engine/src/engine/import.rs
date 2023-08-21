@@ -11,7 +11,8 @@ use serde::{Deserialize, Serialize};
 use std::ops::Range;
 use std::path::PathBuf;
 use std::time::Instant;
-use std::primitive:bool
+use std::primitive::bool;
+
 
 #[derive(
     Debug, Clone, Copy, Serialize, Deserialize, num_derive::FromPrimitive, num_derive::ToPrimitive,
@@ -215,9 +216,10 @@ impl Engine {
 
         rayon::spawn(move || {
             let result = || -> anyhow::Result<BitmapImage> {
-                BitmapImage::import_from_image_bytes(&bytes, pos, None,,resize,&format) //We could change how the
+                BitmapImage::import_from_image_bytes(&bytes, pos, None,resize,&format) //We could change how the
                 // calls work here, maybe not ideal
-                // We transfer the resize argument to import_from_image_bytes            };
+                // the resize is done in the next function, import_from_image_bytes is called with the resize argument
+            };
 
             if let Err(_data) = oneshot_sender.send(result()) {
                 log::error!("sending result to receiver in generate_bitmapimage_from_bytes() failed. Receiver already dropped");

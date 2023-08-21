@@ -16,6 +16,7 @@ use rnote_compose::transform::Transform;
 use rnote_compose::transform::Transformable;
 use serde::{Deserialize, Serialize};
 use std::ops::Range;
+use std::primitive::bool;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default, rename = "bitmapimage")]
@@ -99,11 +100,40 @@ impl BitmapImage {
         bytes: &[u8],
         pos: na::Vector2<f64>,
         size: Option<na::Vector2<f64>>,
+        resize: Option<bool>, // None if no resize to do, else do ....
+        format: &Format, // Need for the format size here
     ) -> Result<Self, anyhow::Error> {
         let image = render::Image::try_from_encoded_bytes(bytes)?;
-        let size = size.unwrap_or_else(|| {
+        let mut size = size.unwrap_or_else(|| {
             na::vector![f64::from(image.pixel_width), f64::from(image.pixel_height)]
-        });
+        }); // Either the size is not provided hence we calculate it here
+        // Or the size is provided so no need to do anything ...
+
+        if resize.is_some(){ //is_some used as a boolean of sort
+            // Seems faster than calls with &true/ &false
+            log::debug!("do a resize");
+            //log::debug!("{:#?}",format);
+
+            // get sizes
+            let scale= (format.width) * (70.0/ 100.0) / size[0]; 
+            // The size of the image is hard coded here. We should probably 
+            // get the settings for this scale from the settings panel
+
+            log::debug!("{:#?}",scale); // The scaling factor
+
+            // change size : needs to make size mutable
+            size=size*scale; 
+        }
+        // Very similar to what is done to import pdfs
+        // But needed to be put here because of the stack call used for images
+        // We could put all scaling of images/pdf in here, pulling what is in the pdf
+        // import function and refactor this function/remove the mut for size among 
+        // other things
+        
+        // Also, may be useful to do some of these changes as the same time as modifying how pdf are imported
+        // For now, all the pdf pages are supposed to be of the same size but this may not be true
+        // And may result in weird reshapes
+
         let rectangle = Rectangle {
             cuboid: p2d::shape::Cuboid::new(size * 0.5),
             transform: Transform::new_w_isometry(na::Isometry2::new(pos + size * 0.5, 0.0)),

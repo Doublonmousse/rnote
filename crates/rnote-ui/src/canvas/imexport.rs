@@ -8,6 +8,8 @@ use rnote_engine::engine::{EngineSnapshot, StrokeContent};
 use rnote_engine::strokes::Stroke;
 use std::ops::Range;
 use std::path::Path;
+use std::primitive::bool;
+use rnote_engine::document::Layout;
 
 impl RnCanvas {
     pub(crate) async fn load_in_rnote_bytes<P>(
@@ -111,7 +113,15 @@ impl RnCanvas {
 
         let bitmapimage_receiver = self
             .engine_mut()
-            .generate_bitmapimage_from_bytes(pos, bytes);
+            .generate_bitmapimage_from_bytes(pos, bytes,Some(true)); //Third argument : resize or not
+            // Need to get the layout (fixed size, continuous or other to change resize arguments)
+            // Next update : we probably only need to resize the image for fixed and continuous size as it is
+            // better for the image not to be too large for the page
+
+            // For infinite canvas, can be discussed
+            // For pixel perfect operations, using the infinite canvas pixel size to export to png, this might be undesirable
+            // But the layout has to be found first to match it
+
         let bitmapimage = bitmapimage_receiver.await??;
 
         let widget_flags = self

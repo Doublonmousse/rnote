@@ -18,6 +18,8 @@ use serde::{Deserialize, Serialize};
 pub enum ToolStyle {
     #[serde(rename = "verticalspace")]
     VerticalSpace,
+    #[serde(rename = "verticalspacegrid")]
+    VerticalSpaceGrid,
     #[serde(rename = "offsetcamera")]
     OffsetCamera,
     #[serde(rename = "zoom")]

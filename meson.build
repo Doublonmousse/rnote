@@ -33,11 +33,8 @@ app_issues_url = 'https://github.com/flxzt/rnote/issues'
 app_support_url = 'https://github.com/flxzt/rnote/discussions'
 app_donate_url = 'https://rnote.flxzt.net/donate/'
 app_author_name = 'Felix Zwettler'
-app_authors = run_command(
-    'cat',
-    meson.project_source_root() / 'AUTHORS',
-    check: true,
-).stdout().strip()
+app_authors = ''
+
 
 version = meson.project_version()
 version_array = version.split('.')
