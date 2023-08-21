@@ -232,7 +232,7 @@ impl BitmapImage {
             .collect::<anyhow::Result<Vec<(Vec<u8>, na::Vector2<f64>, na::Vector2<f64>)>>>()?;
 
         pngs.into_par_iter()
-            .map(|(png_data, pos, size)| Self::from_image_bytes(&png_data, pos, Some(size)))
+            .map(|(png_data, pos, size)| Self::from_image_bytes(&png_data, pos, Some(size), None, &format))
             .collect()
     }
 }

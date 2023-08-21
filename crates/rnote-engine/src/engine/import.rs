@@ -216,7 +216,7 @@ impl Engine {
 
         rayon::spawn(move || {
             let result = || -> anyhow::Result<BitmapImage> {
-                BitmapImage::import_from_image_bytes(&bytes, pos, None,resize,&format) //We could change how the
+                BitmapImage::from_image_bytes(&bytes, pos, None,resize,&format) //We could change how the
                 // calls work here, maybe not ideal
                 // the resize is done in the next function, import_from_image_bytes is called with the resize argument
             };
