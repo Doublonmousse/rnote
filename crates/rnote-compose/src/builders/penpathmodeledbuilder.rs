@@ -7,7 +7,7 @@ use crate::PenEvent;
 use crate::{Constraints, EventResult};
 use crate::{PenPath, Style};
 use ink_stroke_modeler_rs::{
-    ModelerInput, ModelerInputEventType, ModelerParams, PredictionParams, StrokeModeler,
+    ModelerInput, ModelerInputEventType, PredictionParams, StrokeModeler, StrokeModelerParams,
 };
 use once_cell::sync::Lazy;
 use p2d::bounding_volume::Aabb;
@@ -127,14 +127,14 @@ impl Buildable for PenPathModeledBuilder {
     }
 }
 
-static MODELER_PARAMS: Lazy<ModelerParams> = Lazy::new(|| ModelerParams {
+static MODELER_PARAMS: Lazy<StrokeModelerParams> = Lazy::new(|| StrokeModelerParams {
     sampling_min_output_rate: 120.0,
     sampling_end_of_stroke_stopping_distance: 0.01,
     sampling_end_of_stroke_max_iterations: 20,
     sampling_max_outputs_per_call: 200,
     stylus_state_modeler_max_input_samples: 20,
     prediction_params: PredictionParams::StrokeEnd,
-    ..ModelerParams::suggested()
+    ..StrokeModelerParams::suggested()
 });
 
 impl PenPathModeledBuilder {
@@ -167,8 +167,8 @@ impl PenPathModeledBuilder {
         if self.last_element == element
             || now.duration_since(self.last_element_time) <= Duration::ZERO
         {
-            // Can't feed modeler with duplicate elements or with same or reverse time,
-            // would result in `INVALID_ARGUMENT` errors
+            // Can't feed modeler with duplicate elements or with same or reverse time, would results in `INVALID_ARGUMENT` errors
+
             return;
         }
         self.last_element = element;
@@ -178,12 +178,8 @@ impl PenPathModeledBuilder {
             .ceil() as i32;
 
         if n_steps > MODELER_PARAMS.sampling_max_outputs_per_call {
-            // If the no of outputs the modeler would need to produce exceeds the configured maximum
-            // (because the time delta between the last elements is too large), it needs to be restarted.
-            log::debug!(
-                "PenpathModeledBuilder: updating modeler with element failed,
-n_steps exceeds configured max outputs per call."
-            );
+            // ( because the time delta between the last elements is too large ), it needs to be restarted.
+            log::debug!("penpathmodeledbuilder: update_modeler_w_element(): n_steps exceeds configured max outputs per call, restarting modeler");
 
             self.restart(element, now);
         }
@@ -200,11 +196,12 @@ n_steps exceeds configured max outputs per call."
 
         match self.stroke_modeler.update(modeler_input) {
             Ok(results) => self.buffer.extend(results.into_iter().map(|r| {
-                let pos = r.pos();
-                let pressure = r.pressure();
+                let pos = r.get_pos();
+                let pressure = r.get_pressure();
+
                 Element::new(na::vector![pos.0 as f64, pos.1 as f64], pressure as f64)
             })),
-            Err(e) => log::error!("stroke modeler update failed, Err: {e:?}"),
+            Err(e) => log::error!("stroke modeler update() failed, Err: {e:?}"),
         }
 
         // The prediction start is the last buffer element (which will get drained)
@@ -220,13 +217,13 @@ n_steps exceeds configured max outputs per call."
                 Ok(results) => results
                     .into_iter()
                     .map(|r| {
-                        let pos = r.pos();
-                        let pressure = r.pressure();
+                        let pos = r.get_pos();
+                        let pressure = r.get_pressure();
                         Element::new(na::vector![pos.0 as f64, pos.1 as f64], pressure as f64)
                     })
                     .collect::<Vec<Element>>(),
                 Err(e) => {
-                    log::error!("stroke modeler predict failed, Err: {e:?}");
+                    log::error!("stroke modeler predict() failed, Err: {e:?}");
                     Vec::new()
                 }
             }
@@ -240,7 +237,7 @@ n_steps exceeds configured max outputs per call."
         self.last_element_time = now;
         self.last_element = element;
         if let Err(e) = self.stroke_modeler.reset_w_params(*MODELER_PARAMS) {
-            log::error!("resetting stroke modeler failed while restarting, Err: {e:?}");
+            log::error!("stroke modeler reset_w_params() failed while restarting, Err: {e:?}");
             return;
         }
 
@@ -254,12 +251,13 @@ n_steps exceeds configured max outputs per call."
         )) {
             Ok(results) => {
                 self.buffer.extend(results.into_iter().map(|r| {
-                    let pos = r.pos();
-                    let pressure = r.pressure();
+                    let pos = r.get_pos();
+                    let pressure = r.get_pressure();
+
                     Element::new(na::vector![pos.0 as f64, pos.1 as f64], pressure as f64)
                 }));
             }
-            Err(e) => log::error!("stroke modeler update failed while restarting, Err: {e:?}"),
+            Err(e) => log::error!("stroke modeler update() failed while restarting, Err: {e:?}"),
         }
     }
 }
