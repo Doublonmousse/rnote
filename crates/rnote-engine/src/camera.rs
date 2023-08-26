@@ -1,15 +1,12 @@
-use std::time::Duration;
-
 // Imports
-use gtk4::{graphene, gsk};
-use p2d::bounding_volume::Aabb;
-use rnote_compose::ext::AabbExt;
-use serde::{Deserialize, Serialize};
-
 use crate::document::Layout;
 use crate::engine::{EngineTask, EngineTaskSender};
 use crate::tasks::{OneOffTaskError, OneOffTaskHandle};
 use crate::{Document, WidgetFlags};
+use p2d::bounding_volume::Aabb;
+use rnote_compose::ext::AabbExt;
+use serde::{Deserialize, Serialize};
+use std::time::Duration;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default, rename = "camera")]
@@ -176,9 +173,7 @@ impl Camera {
         let widget_flags = self.zoom_temporarily_to(new_temporary_zoom);
 
         let zoom_task = move || {
-            if let Err(e) = tasks_tx.unbounded_send(EngineTask::Zoom(zoom)) {
-                log::error!("Failed to send `EngineTask::Zoom` from ZoomTask, Err: {e:?}");
-            }
+            tasks_tx.send(EngineTask::Zoom(zoom));
         };
         if let Some(handle) = self.zoom_task_handle.as_mut() {
             match handle.replace_task(zoom_task.clone()) {
@@ -276,11 +271,12 @@ impl Camera {
     /// GTKs transformations are applied on its coordinate system,
     /// so we need to reverse the transformation order (translate, then scale).
     /// To get the inverse, call .invert().
-    pub fn transform_for_gtk_snapshot(&self) -> gsk::Transform {
+    #[cfg(feature = "ui")]
+    pub fn transform_for_gtk_snapshot(&self) -> gtk4::gsk::Transform {
         let total_zoom = self.total_zoom();
 
-        gsk::Transform::new()
-            .translate(&graphene::Point::new(
+        gtk4::gsk::Transform::new()
+            .translate(&gtk4::graphene::Point::new(
                 -self.offset[0] as f32,
                 -self.offset[1] as f32,
             ))

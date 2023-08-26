@@ -32,6 +32,8 @@ mod imp {
         #[template_child]
         pub(crate) page_entry: TemplateChild<Entry>,
         #[template_child]
+        pub(crate) n_pages_button: TemplateChild<Button>,
+        #[template_child]
         pub(crate) prev_page_button: TemplateChild<Button>,
         #[template_child]
         pub(crate) next_page_button: TemplateChild<Button>,
@@ -176,6 +178,7 @@ mod imp {
                     self.page_entry.set_text(&(current_page + 1).to_string());
                 }
             }
+            self.n_pages_button.set_label(&n_pages.to_string());
         }
     }
 
@@ -252,6 +255,18 @@ impl RnStrokeContentPreview {
     #[allow(unused)]
     pub(crate) fn set_draw_pattern(&self, draw_pattern: bool) {
         self.imp().paintable.set_draw_pattern(draw_pattern);
+    }
+
+    #[allow(unused)]
+    pub(crate) fn optimize_printing(&self) -> bool {
+        self.imp().paintable.optimize_printing()
+    }
+
+    #[allow(unused)]
+    pub(crate) fn set_optimize_printing(&self, optimize_printing: bool) {
+        self.imp()
+            .paintable
+            .set_optimize_printing(optimize_printing);
     }
 
     #[allow(unused)]
