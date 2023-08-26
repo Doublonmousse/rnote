@@ -3,7 +3,7 @@ use super::render_comp::RenderCompState;
 use super::StrokeKey;
 use crate::engine::StrokeContent;
 use crate::strokes::{Content, Stroke};
-use crate::{render, StrokeStore, WidgetFlags};
+use crate::{StrokeStore, WidgetFlags};
 use geo::intersects::Intersects;
 use geo::prelude::Contains;
 use p2d::bounding_volume::{Aabb, BoundingVolume};
@@ -52,6 +52,7 @@ impl StrokeStore {
         self.stroke_components.keys().collect()
     }
 
+    #[allow(unused)]
     pub(crate) fn keys_unordered_intersecting_bounds(&self, bounds: Aabb) -> Vec<StrokeKey> {
         self.key_tree.keys_intersecting_bounds(bounds)
     }
@@ -177,7 +178,12 @@ impl StrokeStore {
     }
 
     pub(crate) fn set_stroke_pos(&mut self, key: StrokeKey, pos: na::Vector2<f64>) {
-        let Some(stroke) = Arc::make_mut(&mut self.stroke_components).get_mut(key).map(Arc::make_mut) else {return;};
+        let Some(stroke) = Arc::make_mut(&mut self.stroke_components)
+            .get_mut(key)
+            .map(Arc::make_mut)
+        else {
+            return;
+        };
         stroke.set_pos(pos);
     }
 
@@ -213,7 +219,8 @@ impl StrokeStore {
                     image.translate(offset);
                 }
 
-                match render::Image::images_to_rendernodes(&render_comp.images) {
+                #[cfg(feature = "ui")]
+                match crate::render::Image::images_to_rendernodes(&render_comp.images) {
                     Ok(rendernodes) => {
                         render_comp.rendernodes = rendernodes;
                     }
@@ -289,6 +296,35 @@ impl StrokeStore {
         widget_flags
     }
 
+    /// Invert the stroke, text and fill color of the given keys.
+    ///
+    /// Strokes then need to update their rendering.
+    pub fn invert_color_brightness(&mut self, keys: &[StrokeKey]) -> WidgetFlags {
+        let mut widget_flags = WidgetFlags::default();
+
+        if keys.is_empty() {
+            return widget_flags;
+        }
+
+        keys.iter().for_each(|&key| {
+            if let Some(stroke) = Arc::make_mut(&mut self.stroke_components)
+                .get_mut(key)
+                .map(Arc::make_mut)
+            {
+                let stroke_modified = stroke.set_to_inverted_brightness_color();
+
+                if stroke_modified {
+                    self.set_rendering_dirty(key);
+                }
+            }
+        });
+
+        widget_flags.redraw = true;
+        widget_flags.store_modified = true;
+
+        widget_flags
+    }
+
     /// Change the fill color of the given keys.
     ///
     /// The strokes then need to update their rendering.
@@ -343,7 +379,8 @@ impl StrokeStore {
                     image.rotate(angle, center);
                 }
 
-                match render::Image::images_to_rendernodes(&render_comp.images) {
+                #[cfg(feature = "ui")]
+                match crate::render::Image::images_to_rendernodes(&render_comp.images) {
                     Ok(rendernodes) => {
                         render_comp.rendernodes = rendernodes;
                     }
@@ -385,7 +422,8 @@ impl StrokeStore {
                     image.scale(scale);
                 }
 
-                match render::Image::images_to_rendernodes(&render_comp.images) {
+                #[cfg(feature = "ui")]
+                match crate::render::Image::images_to_rendernodes(&render_comp.images) {
                     Ok(rendernodes) => {
                         render_comp.rendernodes = rendernodes;
                     }

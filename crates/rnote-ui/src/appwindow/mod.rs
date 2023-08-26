@@ -192,17 +192,10 @@ impl RnAppWindow {
             .map(|p| p.child().downcast::<RnCanvasWrapper>().unwrap())
         {
             let _ = tab.canvas().engine_mut().set_active(false);
-            if let Err(e) = tab
-                .canvas()
+            tab.canvas()
                 .engine_ref()
                 .engine_tasks_tx()
-                .unbounded_send(EngineTask::Quit)
-            {
-                log::error!(
-                    "failed to send StateTask::Quit to tab with title `{}`, Err: {e:?}",
-                    tab.canvas().doc_title_display()
-                );
-            }
+                .send(EngineTask::Quit);
         }
 
         self.destroy();
@@ -463,7 +456,9 @@ impl RnAppWindow {
             let file_imported = match FileType::lookup_file_type(&input_file) {
                 FileType::RnoteFile => {
                     let Some(input_file_path) = input_file.path() else {
-                        return Err(anyhow::anyhow!("Could not open file: {input_file:?}, path returned None"));
+                        return Err(anyhow::anyhow!(
+                            "Could not open file: {input_file:?}, path returned None"
+                        ));
                     };
 
                     // If the file is already opened in a tab, simply switch to it

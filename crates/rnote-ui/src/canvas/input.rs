@@ -72,11 +72,13 @@ pub(crate) fn handle_pointer_controller_event(
                     || gdk_button == gdk::BUTTON_SECONDARY
                     || gdk_button == gdk::BUTTON_MIDDLE
                 {
+                    handle_pen_event = true;
                     handle_shortcut_key = true;
                 }
             } else {
                 #[allow(clippy::collapsible_else_if)]
                 if gdk_button == gdk::BUTTON_PRIMARY || gdk_button == gdk::BUTTON_SECONDARY {
+                    handle_pen_event = true;
                     handle_shortcut_key = true;
                     state = PenState::Down;
                 }
@@ -153,8 +155,8 @@ pub(crate) fn handle_pointer_controller_event(
 
     if handle_pen_event {
         let Some(elements) = retrieve_pointer_elements(canvas, now, event, backlog_policy) else {
-                    return (glib::Propagation::Proceed, state);
-                };
+            return (glib::Propagation::Proceed, state);
+        };
         let modifier_keys = retrieve_modifier_keys(event.modifier_state());
         let pen_mode = retrieve_pen_mode(event);
 
@@ -333,7 +335,9 @@ fn retrieve_pointer_elements(
             }
 
             let entry_delta = Duration::from_millis(event_time.saturating_sub(entry.time()) as u64);
-            let Some(entry_time) = now.checked_sub(entry_delta) else {continue;};
+            let Some(entry_time) = now.checked_sub(entry_delta) else {
+                continue;
+            };
 
             if let BacklogPolicy::Limit(delta_limit) = backlog_policy {
                 // We go back in time, so `entry_delta` will increase
