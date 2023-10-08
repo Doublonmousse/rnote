@@ -1,3 +1,14 @@
+# personal fork of rnote
+
+For the moment, janky implementations of the two following features
+- Vertical space tool aligned on the grid
+- Image size that cannot get out of the page for fixed and continuous vertical layouts
+
+Please refer to Rnote's discussion on the subject here : https://github.com/flxzt/rnote/discussions/721
+
+I may end up doing a PR when I'm feeling more confident than I'm doing more than just a ugly hack.
+  
+
 <div align="center">
 <img src="https://raw.githubusercontent.com/flxzt/rnote/main/crates/rnote-ui/data/icons/scalable/apps/rnote.svg" width="300"></img>
 </div><br><br><br>
