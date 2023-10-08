@@ -10,9 +10,8 @@ use futures::channel::oneshot;
 use serde::{Deserialize, Serialize};
 use std::ops::Range;
 use std::path::PathBuf;
-use std::time::Instant;
 use std::primitive::bool;
-
+use std::time::Instant;
 
 #[derive(
     Debug, Clone, Copy, Serialize, Deserialize, num_derive::FromPrimitive, num_derive::ToPrimitive,
@@ -216,7 +215,8 @@ impl Engine {
 
         rayon::spawn(move || {
             let result = || -> anyhow::Result<BitmapImage> {
-                BitmapImage::from_image_bytes(&bytes, pos, None,resize,&format) //We could change how the
+                BitmapImage::from_image_bytes(&bytes, pos, None, resize, &format)
+                //We could change how the
                 // calls work here, maybe not ideal
                 // the resize is done in the next function, import_from_image_bytes is called with the resize argument
             };

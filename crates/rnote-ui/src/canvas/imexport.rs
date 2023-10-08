@@ -3,6 +3,7 @@ use super::RnCanvas;
 use futures::channel::oneshot;
 use gtk4::{gio, prelude::*};
 use rnote_compose::ext::Vector2Ext;
+use rnote_engine::document::Layout;
 use rnote_engine::engine::export::{DocExportPrefs, DocPagesExportPrefs, SelectionExportPrefs};
 use rnote_engine::engine::{EngineSnapshot, StrokeContent};
 use rnote_engine::strokes::Stroke;
@@ -10,7 +11,6 @@ use rnote_engine::WidgetFlags;
 use std::ops::Range;
 use std::path::Path;
 use std::primitive::bool;
-use rnote_engine::document::Layout;
 
 impl RnCanvas {
     /// Load the bytes of a `.rnote` file and imports it into the engine.
@@ -126,16 +126,16 @@ impl RnCanvas {
                 ])
         });
 
-        let bitmapimage_receiver = self
-            .engine_mut()
-            .generate_bitmapimage_from_bytes(pos, bytes,Some(true)); //Third argument : resize or not
-            // Need to get the layout (fixed size, continuous or other to change resize arguments)
-            // Next update : we probably only need to resize the image for fixed and continuous size as it is
-            // better for the image not to be too large for the page
+        let bitmapimage_receiver =
+            self.engine_mut()
+                .generate_bitmapimage_from_bytes(pos, bytes, Some(true)); //Third argument : resize or not
+                                                                          // Need to get the layout (fixed size, continuous or other to change resize arguments)
+                                                                          // Next update : we probably only need to resize the image for fixed and continuous size as it is
+                                                                          // better for the image not to be too large for the page
 
-            // For infinite canvas, can be discussed
-            // For pixel perfect operations, using the infinite canvas pixel size to export to png, this might be undesirable
-            // But the layout has to be found first to match it
+        // For infinite canvas, can be discussed
+        // For pixel perfect operations, using the infinite canvas pixel size to export to png, this might be undesirable
+        // But the layout has to be found first to match it
 
         let bitmapimage = bitmapimage_receiver.await??;
 

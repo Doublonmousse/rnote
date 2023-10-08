@@ -72,7 +72,7 @@ impl RnToolsPage {
 
         if imp.toolstyle_verticalspace_toggle.is_active() {
             Some(ToolStyle::VerticalSpace)
-        } else if imp.toolstyle_verticalspace_grid_toggle.is_active(){
+        } else if imp.toolstyle_verticalspace_grid_toggle.is_active() {
             Some(ToolStyle::VerticalSpaceGrid)
         } else if imp.toolstyle_offsetcamera_toggle.is_active() {
             Some(ToolStyle::OffsetCamera)
@@ -89,7 +89,9 @@ impl RnToolsPage {
 
         match style {
             ToolStyle::VerticalSpace => imp.toolstyle_verticalspace_toggle.set_active(true),
-            ToolStyle::VerticalSpaceGrid => imp.toolstyle_verticalspace_grid_toggle.set_active(true), 
+            ToolStyle::VerticalSpaceGrid => {
+                imp.toolstyle_verticalspace_grid_toggle.set_active(true)
+            }
             ToolStyle::OffsetCamera => imp.toolstyle_offsetcamera_toggle.set_active(true),
             ToolStyle::Zoom => imp.toolstyle_zoom_toggle.set_active(true),
         }
@@ -103,7 +105,7 @@ impl RnToolsPage {
                 appwindow.active_tab_wrapper().canvas().engine_mut().pens_config.tools_config.style = ToolStyle::VerticalSpace;
             }
         }));
-        
+
         imp.toolstyle_verticalspace_grid_toggle.connect_toggled(clone!(@weak appwindow => move |toggle| {
             if toggle.is_active() {
                 appwindow.active_tab_wrapper().canvas().engine_mut().pens_config.tools_config.style = ToolStyle::VerticalSpaceGrid;

@@ -13,7 +13,7 @@ use rnote_compose::ext::{AabbExt, Vector2Ext};
 use rnote_compose::penevent::{PenEvent, PenProgress};
 use std::time::Instant;
 
-use crate::document::{background}; //Layout for some pot future changes 
+use crate::document::background; //Layout for some pot future changes
 
 #[derive(Clone, Debug)]
 pub struct VerticalSpaceTool {
@@ -391,8 +391,8 @@ impl PenBehaviour for Tools {
                             .store
                             .keys_below_y(self.verticalspace_tool.pos_y);
                     }
-                    
-                    ToolStyle::VerticalSpaceGrid =>{
+
+                    ToolStyle::VerticalSpaceGrid => {
                         //Maybe modify further for page by page modifications
                         //With arguments, would need to change it further
                         self.verticalspacegrid_tool.start_pos_y = element.pos[1];
@@ -466,11 +466,17 @@ impl PenBehaviour for Tools {
                             widget_flags.store_modified = true;
                         }
                     }
-                    ToolStyle::VerticalSpaceGrid=> {
-                        let y_offset =  match engine_view.doc.background.pattern {
-                            background::PatternStyle::None => element.pos[1] - self.verticalspacegrid_tool.pos_y,
+                    ToolStyle::VerticalSpaceGrid => {
+                        let y_offset = match engine_view.doc.background.pattern {
+                            background::PatternStyle::None => {
+                                element.pos[1] - self.verticalspacegrid_tool.pos_y
+                            }
                             //Only activate this grid behavior when a grid pattern is selected (not None)
-                            _ => (element.pos[1] - self.verticalspacegrid_tool.pos_y) - ((element.pos[1] - self.verticalspacegrid_tool.pos_y) % engine_view.doc.background.pattern_size[1]),
+                            _ => {
+                                (element.pos[1] - self.verticalspacegrid_tool.pos_y)
+                                    - ((element.pos[1] - self.verticalspacegrid_tool.pos_y)
+                                        % engine_view.doc.background.pattern_size[1])
+                            }
                         };
                         if y_offset.abs() > VerticalSpaceGridTool::Y_OFFSET_THRESHOLD {
                             engine_view.store.translate_strokes(
@@ -482,10 +488,11 @@ impl PenBehaviour for Tools {
                                 na::vector![0.0, y_offset],
                             );
 
-                            self.verticalspacegrid_tool.pos_y = match engine_view.doc.background.pattern {
-                                background::PatternStyle::None => element.pos[1],
-                                _ => self.verticalspacegrid_tool.pos_y + y_offset,
-                            };
+                            self.verticalspacegrid_tool.pos_y =
+                                match engine_view.doc.background.pattern {
+                                    background::PatternStyle::None => element.pos[1],
+                                    _ => self.verticalspacegrid_tool.pos_y + y_offset,
+                                };
                             // update the ref displacement point to which subsequent displacements will be compared
 
                             widget_flags.store_modified = true;
@@ -552,10 +559,10 @@ impl PenBehaviour for Tools {
                         widget_flags.store_modified = true;
                     }
                     ToolStyle::VerticalSpaceGrid => {
-                        engine_view
-                            .store
-                            .update_geometry_for_strokes(&self.verticalspacegrid_tool.strokes_below);
-                            
+                        engine_view.store.update_geometry_for_strokes(
+                            &self.verticalspacegrid_tool.strokes_below,
+                        );
+
                         widget_flags |= engine_view.store.record(Instant::now());
                         widget_flags.store_modified = true;
                     }
@@ -625,7 +632,9 @@ impl DrawableOnDoc for Tools {
         match self.state {
             ToolsState::Active => match engine_view.pens_config.tools_config.style {
                 ToolStyle::VerticalSpace => self.verticalspace_tool.bounds_on_doc(engine_view),
-                ToolStyle::VerticalSpaceGrid => self.verticalspacegrid_tool.bounds_on_doc(engine_view),
+                ToolStyle::VerticalSpaceGrid => {
+                    self.verticalspacegrid_tool.bounds_on_doc(engine_view)
+                }
                 ToolStyle::OffsetCamera => self.offsetcamera_tool.bounds_on_doc(engine_view),
                 ToolStyle::Zoom => self.zoom_tool.bounds_on_doc(engine_view),
             },
@@ -670,7 +679,7 @@ impl Tools {
             ToolStyle::VerticalSpaceGrid => {
                 self.verticalspacegrid_tool.start_pos_y = 0.0;
                 self.verticalspacegrid_tool.pos_y = 0.0;
-            }   
+            }
             ToolStyle::OffsetCamera => {
                 self.offsetcamera_tool.start = na::Vector2::zeros();
             }
