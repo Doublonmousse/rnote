@@ -101,6 +101,8 @@ mod imp {
         #[template_child]
         pub(crate) penshortcut_touch_two_finger_long_press_row: TemplateChild<RnPenShortcutRow>,
         #[template_child]
+        pub(crate) penshortcut_keyboard_ctrl_space_row: TemplateChild<RnPenShortcutRow>,
+        #[template_child]
         pub(crate) penshortcut_drawing_pad_button_0: TemplateChild<RnPenShortcutRow>,
         #[template_child]
         pub(crate) penshortcut_drawing_pad_button_1: TemplateChild<RnPenShortcutRow>,
@@ -131,46 +133,54 @@ mod imp {
             let obj = self.obj();
 
             self.format_predefined_formats_row
-                .connect_selected_item_notify(
-                    clone!(@weak obj as settings_panel => move |_format_predefined_formats_row| {
-                        settings_panel.imp().update_temporary_format_from_ui();
-                        settings_panel.imp().apply_predefined_format();
-                    }),
-                );
+                .connect_selected_item_notify(clone!(@weak obj as settings_panel => move |_| {
+                    settings_panel.imp().apply_predefined_format();
+                }));
 
             self.format_orientation_portrait_toggle.connect_toggled(
-                clone!(@weak obj as settings_panel => move |_format_orientation_portrait_toggle| {
-                    settings_panel.imp().update_temporary_format_from_ui();
-                    settings_panel.imp().apply_predefined_format();
+                clone!(@weak obj as settings_panel => move |toggle| {
+                    if toggle.is_active() && settings_panel.format_orientation() != settings_panel.imp().temporary_format.borrow().orientation() {
+                        settings_panel.imp().swap_width_height();
+                    }
                 }),
             );
 
             self.format_orientation_landscape_toggle.connect_toggled(
-                clone!(@weak obj as settings_panel => move |_format_orientation_landscape_toggle| {
-                    settings_panel.imp().update_temporary_format_from_ui();
-                    settings_panel.imp().apply_predefined_format();
+                clone!(@weak obj as settings_panel => move |toggle| {
+                    if toggle.is_active() && settings_panel.format_orientation() != settings_panel.imp().temporary_format.borrow().orientation() {
+                        settings_panel.imp().swap_width_height();
+                    }
                 }),
             );
 
             self.format_width_unitentry.get().connect_notify_local(
                 Some("value"),
-                clone!(@weak obj as settings_panel => move |_, _| {
-                        settings_panel.imp().update_temporary_format_from_ui();
+                clone!(@weak obj as settings_panel => move |entry, _| {
+                        settings_panel.imp().temporary_format
+                            .borrow_mut()
+                            .set_width(entry.value_in_px());
+                        settings_panel.imp().update_orientation_toggles();
                 }),
             );
 
             self.format_height_unitentry.get().connect_notify_local(
                 Some("value"),
-                clone!(@weak obj as settings_panel => move |_, _| {
-                        settings_panel.imp().update_temporary_format_from_ui();
+                clone!(@weak obj as settings_panel => move |entry, _| {
+                        settings_panel.imp().temporary_format
+                            .borrow_mut()
+                            .set_height(entry.value_in_px());
+                        settings_panel.imp().update_orientation_toggles();
                 }),
             );
 
             self.format_dpi_adj.connect_value_changed(
-                clone!(@weak obj as settings_panel => move |format_dpi_adj| {
-                    settings_panel.imp().update_temporary_format_from_ui();
-                    settings_panel.imp().format_width_unitentry.set_dpi_keep_value(format_dpi_adj.value());
-                    settings_panel.imp().format_height_unitentry.set_dpi_keep_value(format_dpi_adj.value());
+                clone!(@weak obj as settings_panel => move |adj| {
+                    let dpi = adj.value();
+                    settings_panel.imp().format_width_unitentry.set_dpi_keep_value(dpi);
+                    settings_panel.imp().format_height_unitentry.set_dpi_keep_value(dpi);
+                    settings_panel.imp().temporary_format
+                        .borrow_mut()
+                        .set_dpi(adj.value());
                 }),
             );
         }
@@ -186,92 +196,31 @@ mod imp {
     impl WidgetImpl for RnSettingsPanel {}
 
     impl RnSettingsPanel {
-        pub(crate) fn update_temporary_format_from_ui(&self) {
-            // border color
-            self.temporary_format.borrow_mut().border_color = self
-                .doc_format_border_color_button
-                .rgba()
-                .into_compose_color();
-
-            // Format orientation
-            if self.format_orientation_portrait_toggle.is_active() {
-                self.temporary_format.borrow_mut().orientation = format::Orientation::Portrait;
+        fn update_orientation_toggles(&self) {
+            let width = self.format_width_unitentry.value_in_px();
+            let height = self.format_height_unitentry.value_in_px();
+            let orientation = if width <= height {
+                format::Orientation::Portrait
             } else {
-                self.temporary_format.borrow_mut().orientation = format::Orientation::Landscape;
-            }
+                format::Orientation::Landscape
+            };
+            self.obj().set_format_orientation(orientation);
+        }
 
-            // DPI (before width, height)
-            self.temporary_format.borrow_mut().dpi = self
-                .format_dpi_adj
-                .value()
-                .clamp(Format::DPI_MIN, Format::DPI_MAX);
-
-            // Width
-            self.temporary_format.borrow_mut().width = self
-                .format_width_unitentry
-                .value_in_px()
-                .clamp(Format::WIDTH_MIN, Format::WIDTH_MAX);
-            // Height
-            self.temporary_format.borrow_mut().height = self
-                .format_height_unitentry
-                .value_in_px()
-                .clamp(Format::HEIGHT_MIN, Format::HEIGHT_MAX);
+        fn swap_width_height(&self) {
+            let width = self.format_width_unitentry.value_in_px();
+            let height = self.format_height_unitentry.value_in_px();
+            self.temporary_format.borrow_mut().set_width(height);
+            self.temporary_format.borrow_mut().set_height(width);
+            self.format_width_unitentry.set_value_in_px(height);
+            self.format_height_unitentry.set_value_in_px(width);
         }
 
         fn apply_predefined_format(&self) {
             let predefined_format = self.obj().format_predefined_format();
+            let orientation = self.temporary_format.borrow().orientation();
 
-            let preconfigured_dimensions = predefined_format.size_portrait_mm();
-            match predefined_format {
-                PredefinedFormat::A6 => {
-                    self.format_orientation_row.set_sensitive(true);
-                    self.format_width_row.set_sensitive(false);
-                    self.format_height_row.set_sensitive(false);
-                }
-                PredefinedFormat::A5 => {
-                    self.format_orientation_row.set_sensitive(true);
-                    self.format_width_row.set_sensitive(false);
-                    self.format_height_row.set_sensitive(false);
-                }
-                PredefinedFormat::A4 => {
-                    self.format_orientation_row.set_sensitive(true);
-                    self.format_width_row.set_sensitive(false);
-                    self.format_height_row.set_sensitive(false);
-                }
-                PredefinedFormat::A3 => {
-                    self.format_orientation_row.set_sensitive(true);
-                    self.format_width_row.set_sensitive(false);
-                    self.format_height_row.set_sensitive(false);
-                }
-                PredefinedFormat::A2 => {
-                    self.format_orientation_row.set_sensitive(true);
-                    self.format_width_row.set_sensitive(false);
-                    self.format_height_row.set_sensitive(false);
-                }
-                PredefinedFormat::UsLetter => {
-                    self.format_orientation_row.set_sensitive(true);
-                    self.format_width_row.set_sensitive(false);
-                    self.format_height_row.set_sensitive(false);
-                }
-                PredefinedFormat::UsLegal => {
-                    self.format_orientation_row.set_sensitive(true);
-                    self.format_width_row.set_sensitive(false);
-                    self.format_height_row.set_sensitive(false);
-                }
-                PredefinedFormat::Custom => {
-                    self.format_orientation_row.set_sensitive(false);
-                    self.format_width_row.set_sensitive(true);
-                    self.format_height_row.set_sensitive(true);
-                    self.format_orientation_portrait_toggle.set_active(true);
-                    self.temporary_format.borrow_mut().orientation = format::Orientation::Portrait;
-                }
-            };
-
-            if let Some(mut format_dimensions_mm) = preconfigured_dimensions {
-                if self.temporary_format.borrow().orientation == format::Orientation::Landscape {
-                    std::mem::swap(&mut format_dimensions_mm.0, &mut format_dimensions_mm.1);
-                }
-
+            if let Some(predefined_size_mm) = predefined_format.size_mm(orientation) {
                 // reset to mm as default for presets
                 self.format_width_unitentry
                     .get()
@@ -281,11 +230,22 @@ mod imp {
                     .set_unit(format::MeasureUnit::Mm);
                 self.format_width_unitentry
                     .get()
-                    .set_value(format_dimensions_mm.0);
+                    .set_value(predefined_size_mm[0]);
                 self.format_height_unitentry
                     .get()
-                    .set_value(format_dimensions_mm.1);
+                    .set_value(predefined_size_mm[1]);
             }
+
+            match predefined_format {
+                PredefinedFormat::Custom => {
+                    self.format_width_row.set_sensitive(true);
+                    self.format_height_row.set_sensitive(true);
+                }
+                _ => {
+                    self.format_width_row.set_sensitive(false);
+                    self.format_height_row.set_sensitive(false);
+                }
+            };
         }
     }
 }
@@ -334,6 +294,15 @@ impl RnSettingsPanel {
             .doc_background_patterns_row
             .get()
             .set_selected(position);
+    }
+
+    #[allow(unused)]
+    pub(crate) fn format_orientation(&self) -> format::Orientation {
+        if self.imp().format_orientation_portrait_toggle.is_active() {
+            format::Orientation::Portrait
+        } else {
+            format::Orientation::Landscape
+        }
     }
 
     pub(crate) fn set_format_orientation(&self, orientation: format::Orientation) {
@@ -396,12 +365,12 @@ impl RnSettingsPanel {
         *self.imp().temporary_format.borrow_mut() = format;
 
         self.set_format_predefined_format_variant(format::PredefinedFormat::Custom);
-        self.set_format_orientation(format.orientation);
-        imp.format_dpi_adj.set_value(format.dpi);
-        imp.format_width_unitentry.set_dpi(format.dpi);
-        imp.format_width_unitentry.set_value_in_px(format.width);
-        imp.format_height_unitentry.set_dpi(format.dpi);
-        imp.format_height_unitentry.set_value_in_px(format.height);
+        self.set_format_orientation(format.orientation());
+        imp.format_dpi_adj.set_value(format.dpi());
+        imp.format_width_unitentry.set_dpi(format.dpi());
+        imp.format_width_unitentry.set_value_in_px(format.width());
+        imp.format_height_unitentry.set_dpi(format.dpi());
+        imp.format_height_unitentry.set_value_in_px(format.height());
     }
 
     fn refresh_doc_ui(&self, active_tab: &RnCanvasWrapper) {
@@ -416,11 +385,11 @@ impl RnSettingsPanel {
         imp.doc_background_pattern_color_button
             .set_rgba(&gdk::RGBA::from_compose_color(background.pattern_color));
         imp.doc_background_pattern_width_unitentry
-            .set_dpi(format.dpi);
+            .set_dpi(format.dpi());
         imp.doc_background_pattern_width_unitentry
             .set_value_in_px(background.pattern_size[0]);
         imp.doc_background_pattern_height_unitentry
-            .set_dpi(format.dpi);
+            .set_dpi(format.dpi());
         imp.doc_background_pattern_height_unitentry
             .set_value_in_px(background.pattern_size[1]);
     }
@@ -448,6 +417,9 @@ impl RnSettingsPanel {
                     imp.penshortcut_touch_two_finger_long_press_row
                         .set_action(action);
                 }
+                ShortcutKey::KeyboardCtrlSpace => {
+                    imp.penshortcut_keyboard_ctrl_space_row.set_action(action);
+                }
                 ShortcutKey::DrawingPadButton0 => {
                     imp.penshortcut_drawing_pad_button_0.set_action(action);
                 }
@@ -460,7 +432,6 @@ impl RnSettingsPanel {
                 ShortcutKey::DrawingPadButton3 => {
                     imp.penshortcut_drawing_pad_button_3.set_action(action);
                 }
-                _ => {}
             });
     }
 
@@ -589,16 +560,7 @@ impl RnSettingsPanel {
         // Apply format
         imp.format_apply_button.get().connect_clicked(
             clone!(@weak self as settingspanel, @weak appwindow => move |_| {
-                let imp = settingspanel.imp();
-                let canvas = appwindow.active_tab_wrapper().canvas();
-                let temporary_format = *imp.temporary_format.borrow();
-
-                imp.doc_background_pattern_width_unitentry.set_dpi_keep_value(temporary_format.dpi);
-                imp.doc_background_pattern_height_unitentry.set_dpi_keep_value(temporary_format.dpi);
-
-                canvas.engine_mut().document.format = temporary_format;
-                let widget_flags = canvas.engine_mut().doc_resize_to_fit_content();
-                appwindow.handle_widget_flags(widget_flags, &canvas);
+                settingspanel.apply_format(&appwindow);
             }),
         );
     }
@@ -726,6 +688,7 @@ impl RnSettingsPanel {
             imp.penshortcut_mouse_button_secondary_row.get();
         let penshortcut_touch_two_finger_long_press_row =
             imp.penshortcut_touch_two_finger_long_press_row.get();
+        let penshortcut_keyboard_ctrl_space_row = imp.penshortcut_keyboard_ctrl_space_row.get();
         let penshortcut_drawing_pad_button_0 = imp.penshortcut_drawing_pad_button_0.get();
         let penshortcut_drawing_pad_button_1 = imp.penshortcut_drawing_pad_button_1.get();
         let penshortcut_drawing_pad_button_2 = imp.penshortcut_drawing_pad_button_2.get();
@@ -752,6 +715,12 @@ impl RnSettingsPanel {
         imp.penshortcut_touch_two_finger_long_press_row.connect_local("action-changed", false, clone!(@weak penshortcut_touch_two_finger_long_press_row, @weak appwindow => @default-return None, move |_values| {
             let action = penshortcut_touch_two_finger_long_press_row.action();
             appwindow.active_tab_wrapper().canvas().engine_mut().penholder.register_shortcut(ShortcutKey::TouchTwoFingerLongPress, action);
+            None
+        }));
+
+        imp.penshortcut_keyboard_ctrl_space_row.connect_local("action-changed", false, clone!(@weak penshortcut_keyboard_ctrl_space_row, @weak appwindow => @default-return None, move |_values| {
+            let action = penshortcut_keyboard_ctrl_space_row.action();
+            appwindow.active_tab_wrapper().canvas().engine_mut().penholder.register_shortcut(ShortcutKey::KeyboardCtrlSpace, action);
             None
         }));
 
@@ -787,13 +756,28 @@ impl RnSettingsPanel {
         let revert_format = canvas.engine_ref().document.format;
 
         self.set_format_predefined_format_variant(format::PredefinedFormat::Custom);
-        imp.format_dpi_adj.set_value(revert_format.dpi);
-
-        // Setting the entries, which have callbacks to update the temporary format
+        imp.format_dpi_adj.set_value(revert_format.dpi());
+        imp.format_width_unitentry.set_dpi(revert_format.dpi());
         imp.format_width_unitentry
-            .set_value_in_px(revert_format.width);
+            .set_value_in_px(revert_format.width());
+        imp.format_height_unitentry.set_dpi(revert_format.dpi());
         imp.format_height_unitentry
-            .set_value_in_px(revert_format.height);
+            .set_value_in_px(revert_format.height());
+    }
+
+    fn apply_format(&self, appwindow: &RnAppWindow) {
+        let imp = self.imp();
+        let canvas = appwindow.active_tab_wrapper().canvas();
+        let temporary_format = *imp.temporary_format.borrow();
+
+        imp.doc_background_pattern_width_unitentry
+            .set_dpi_keep_value(temporary_format.dpi());
+        imp.doc_background_pattern_height_unitentry
+            .set_dpi_keep_value(temporary_format.dpi());
+
+        canvas.engine_mut().document.format = temporary_format;
+        let widget_flags = canvas.engine_mut().doc_resize_to_fit_content();
+        appwindow.handle_widget_flags(widget_flags, &canvas);
     }
 }
 

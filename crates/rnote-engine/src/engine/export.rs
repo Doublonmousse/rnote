@@ -338,7 +338,7 @@ impl Engine {
     /// Extract the current engine configuration.
     pub fn extract_engine_config(&self) -> EngineConfig {
         EngineConfig {
-            document: self.document,
+            document: self.document.clone_config(),
             pens_config: self.pens_config.clone(),
             penholder: self.penholder.clone_config(),
             import_prefs: self.import_prefs,
@@ -470,7 +470,7 @@ impl Engine {
         let doc_export_prefs =
             doc_export_prefs_override.unwrap_or(self.export_prefs.doc_export_prefs);
         let pages_content = self.extract_pages_content(doc_export_prefs.page_order);
-        let format_size = na::vector![self.document.format.width, self.document.format.height];
+        let format_size = self.document.format.size();
 
         rayon::spawn(move || {
             let result = || -> anyhow::Result<Vec<u8>> {
@@ -544,7 +544,7 @@ impl Engine {
         let doc_export_prefs =
             doc_export_prefs_override.unwrap_or(self.export_prefs.doc_export_prefs);
         let pages_content = self.extract_pages_content(doc_export_prefs.page_order);
-        let document = self.document;
+        let document = self.document.clone();
 
         rayon::spawn(move || {
             let result = || -> anyhow::Result<Vec<u8>> {
@@ -570,7 +570,7 @@ impl Engine {
                             .filter_map(|mut stroke| {
                                 let mut stroke = Arc::make_mut(&mut stroke).clone();
                                 stroke.translate(-page_bounds.mins.coords);
-                                stroke.into_xopp(document.format.dpi)
+                                stroke.into_xopp(document.format.dpi())
                             })
                             .collect::<Vec<xoppformat::XoppStrokeType>>();
 
@@ -628,7 +628,7 @@ impl Engine {
 
                         let page_dimensions = crate::utils::convert_coord_dpi(
                             page_bounds.extents(),
-                            document.format.dpi,
+                            document.format.dpi(),
                             xoppformat::XoppFile::DPI,
                         );
 

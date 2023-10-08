@@ -68,9 +68,8 @@ impl Engine {
     ///
     /// If the background pattern or zoom has changed, the background pattern needs to be regenerated first.
     pub fn update_rendering_current_viewport(&mut self) -> WidgetFlags {
-        let mut widget_flags = self.update_background_rendering_current_viewport();
-        widget_flags |= self.update_content_rendering_current_viewport();
-        widget_flags
+        self.update_background_rendering_current_viewport()
+            | self.update_content_rendering_current_viewport()
     }
 
     /// Clear the rendering of the entire engine (e.g. when it becomes off-screen).
@@ -238,10 +237,9 @@ impl Engine {
 
             snapshot.push_clip(&graphene::Rect::from_p2d_aabb(doc_bounds.loosened(2.0)));
 
-            for page_bounds in doc_bounds.split_extended_origin_aligned(
-                na::vector![self.document.format.width, self.document.format.height],
-                SplitOrder::default(),
-            ) {
+            for page_bounds in doc_bounds
+                .split_extended_origin_aligned(self.document.format.size(), SplitOrder::default())
+            {
                 if !page_bounds.intersects(&viewport) {
                     continue;
                 }
