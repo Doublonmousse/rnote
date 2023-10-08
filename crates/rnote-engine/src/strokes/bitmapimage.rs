@@ -116,7 +116,7 @@ impl BitmapImage {
             //log::debug!("{:#?}",format);
 
             // get sizes
-            let scale = (format.width) * (70.0 / 100.0) / size[0];
+            let scale = format.width() * (70.0 / 100.0) / size[0];
             // The size of the image is hard coded here. We should probably
             // get the settings for this scale from the settings panel
 
@@ -126,7 +126,7 @@ impl BitmapImage {
             size = size * scale;
         }
         // Very similar to what is done to import pdfs
-        // But needed to be put here because of the stack call used for images
+        // But needed to be put here because of the stack call used `r images
         // We could put all scaling of images/pdf in here, pulling what is in the pdf
         // import function and refactor this function/remove the mut for size among
         // other things
