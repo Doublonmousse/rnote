@@ -15,6 +15,7 @@ use crate::{
 };
 use adw::subclass::prelude::AdwApplicationImpl;
 use gtk4::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
+use std::path::PathBuf;
 
 mod imp {
     use crate::workspacebrowser::workspacesbar::RnWorkspaceListEntry;
@@ -139,23 +140,23 @@ mod imp {
             // Loading in input file in the first tab, if Some
             if let Some(input_file) = input_file {
                 // here if a file was selected to be opened
-                log::debug!("{:?}", &input_file); // log before
-                log::debug!(
-                    "{:?}",
-                    (RnWorkspaceListEntry::new(RnWorkspaceListEntryInner::default()))
-                ); //push a new thing that we will then change
-                   // maybe need to re export things so that I can define my own thing here ?
-                   // also needs a new workspace bar probably at the bottom part of the screen to
-                   // only have the current workspace
+                log::debug!("{:?}", &input_file.basename()); // can we get the path here ?
 
-                appwindow
-                    .sidebar()
-                    .workspacebrowser()
-                    .workspacesbar()
-                    .push_workspace(RnWorkspaceListEntry::new(
-                        RnWorkspaceListEntryInner::default(),
-                    ));
-
+                if let Some(path_filename) = &input_file.basename() {
+                    let current_folder = RnWorkspaceListEntry::new(RnWorkspaceListEntryInner {
+                        dir: path_filename,
+                        icon: String::from("workspacelistentryicon-folder-symbolic"),
+                        color: RnWorkspaceListEntry::COLOR_DEFAULT.as_rgba_u32(),
+                        name: String::from("current folder of the opened file"),
+                    });
+                    log::debug!("{:?}", current_folder);
+                    // we probably need a new workspace for this
+                    appwindow
+                        .sidebar()
+                        .workspacebrowser()
+                        .workspacesbar()
+                        .push_workspace(current_folder);
+                };
                 // also needs to get the workspace
                 // though maybe this isn't initialized here or need to find how to find the variable ?
                 glib::MainContext::default().spawn_local(clone!(@weak appwindow => async move {
