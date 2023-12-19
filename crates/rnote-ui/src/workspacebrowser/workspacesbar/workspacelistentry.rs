@@ -9,7 +9,7 @@ use rnote_engine::ext::GdkRGBAExt;
 use std::cell::RefCell;
 use std::path::PathBuf;
 
-mod imp {
+pub mod imp {
     use super::*;
 
     #[derive(Debug, Clone, glib::Variant, serde::Serialize, serde::Deserialize)]

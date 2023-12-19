@@ -17,6 +17,9 @@ use adw::subclass::prelude::AdwApplicationImpl;
 use gtk4::{gio, glib, glib::clone, prelude::*, subclass::prelude::*};
 
 mod imp {
+    use crate::workspacebrowser::workspacesbar::RnWorkspaceListEntry;
+    use crate::workspacebrowser::workspacesbar::RnWorkspaceListEntryInner;
+
     use super::*;
 
     #[derive(Debug)]
@@ -135,6 +138,18 @@ mod imp {
 
             // Loading in input file in the first tab, if Some
             if let Some(input_file) = input_file {
+                // here if a file was selected to be opened
+                log::debug!("{:?}", &input_file); // log before
+                log::debug!(
+                    "{:?}",
+                    (RnWorkspaceListEntry::new(RnWorkspaceListEntryInner::default()))
+                ); //push a new thing that we will then change
+                   // maybe need to re export things so that I can define my own thing here ?
+                   // also needs a new workspace bar probably at the bottom part of the screen to
+                   // only have the current workspace
+
+                // also needs to get the workspace
+                // though maybe this isn't initialized here or need to find how to find the variable ?
                 glib::MainContext::default().spawn_local(clone!(@weak appwindow => async move {
                     appwindow.open_file_w_dialogs(input_file, None, false).await;
                 }));

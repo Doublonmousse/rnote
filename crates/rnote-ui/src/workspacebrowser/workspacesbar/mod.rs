@@ -6,6 +6,7 @@ mod workspacerow;
 use gtk4::ConstantExpression;
 // Re-exports
 pub(crate) use workspacelist::RnWorkspaceList;
+pub(crate) use workspacelistentry::imp::RnWorkspaceListEntryInner;
 pub(crate) use workspacelistentry::RnWorkspaceListEntry;
 pub(crate) use workspacerow::RnWorkspaceRow;
 
@@ -279,6 +280,11 @@ impl RnWorkspacesBar {
             }
         }
 
+        for entry in &workspace_list.iter() {
+            log::debug!("{:?}", entry.dir());
+            log::debug!("{:?}", entry.name());
+        }
+
         self.imp().workspace_list.replace_self(workspace_list);
         self.select_workspace_by_index(selected_workspace_index);
     }
@@ -392,6 +398,7 @@ impl RnWorkspacesBar {
                     let entry = workspacesbar.selected_workspacelistentry().unwrap_or_default();
                     workspacesbar.push_workspace(entry);
 
+                    log::debug!("{:?}",workspacesbar); //inspect the workspace
                     // Popup the edit dialog after creation
                     dialogs::dialog_edit_selected_workspace(&appwindow).await;
                 }));
