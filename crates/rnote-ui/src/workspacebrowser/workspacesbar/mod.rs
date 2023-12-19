@@ -280,10 +280,10 @@ impl RnWorkspacesBar {
             }
         }
 
-        for entry in &workspace_list.iter() {
-            log::debug!("{:?}", entry.dir());
-            log::debug!("{:?}", entry.name());
-        }
+        // for entry in &workspace_list.iter() {
+        // log::debug!("{:?}", entry.dir());
+        // log::debug!("{:?}", entry.name());
+        // }
 
         self.imp().workspace_list.replace_self(workspace_list);
         self.select_workspace_by_index(selected_workspace_index);
