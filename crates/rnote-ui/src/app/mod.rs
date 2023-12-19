@@ -148,6 +148,14 @@ mod imp {
                    // also needs a new workspace bar probably at the bottom part of the screen to
                    // only have the current workspace
 
+                appwindow
+                    .sidebar()
+                    .workspacebrowser()
+                    .workspacesbar()
+                    .push_workspace(RnWorkspaceListEntry::new(
+                        RnWorkspaceListEntryInner::default(),
+                    ));
+
                 // also needs to get the workspace
                 // though maybe this isn't initialized here or need to find how to find the variable ?
                 glib::MainContext::default().spawn_local(clone!(@weak appwindow => async move {
