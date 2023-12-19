@@ -140,11 +140,15 @@ mod imp {
             // Loading in input file in the first tab, if Some
             if let Some(input_file) = input_file {
                 // here if a file was selected to be opened
-                log::debug!("{:?}", &input_file.path().unwrap_or_default().parent()); // can we get the path here ?
 
                 if let Some(path_filename) = &input_file.path() {
+                    log::debug!("{:?}", &input_file.path().unwrap_or_default().parent()); // can we get the path here ?
+
                     let current_folder = RnWorkspaceListEntry::new(RnWorkspaceListEntryInner {
-                        dir: path_filename.parent().to_path_buf(),
+                        dir: path_filename
+                            .parent()
+                            .expect("no parent found")
+                            .to_path_buf(),
                         icon: String::from("workspacelistentryicon-folder-symbolic"),
                         color: RnWorkspaceListEntry::COLOR_DEFAULT.as_rgba_u32(),
                         name: String::from("current folder of the opened file"),
