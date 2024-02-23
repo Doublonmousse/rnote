@@ -260,7 +260,8 @@ impl Transformable for BrushStroke {
         self.path.scale(scale);
         let scale_uniform = (scale[0] + scale[1]) / 2.;
         self.style
-            .set_stroke_width(self.style.stroke_width_ghost() * scale_uniform);
+            .set_stroke_width(self.style.stroke_width() * scale_uniform);
+            // .set_stroke_width(self.style.stroke_width_ghost() * scale_uniform);
     }
 }
 
