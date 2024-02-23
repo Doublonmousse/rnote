@@ -13,6 +13,9 @@ pub struct RoughOptions {
     /// Stroke width.
     #[serde(rename = "stroke_width", with = "crate::serialize::f64_dp3")]
     pub stroke_width: f64,
+    /// ghost stroke width (to refer to when scaling with a resize)
+    #[serde(rename = "strokle_width_cache")]
+    pub stroke_width_ghost: f64,
     /// Fill color. When set to None the fill is not drawn.
     #[serde(rename = "fill_color")]
     pub fill_color: Option<Color>,
@@ -32,6 +35,7 @@ impl Default for RoughOptions {
         Self {
             stroke_color: Some(Color::BLACK),
             stroke_width: 2.4,
+            stroke_width_ghost: 2.4,
             fill_color: None,
             fill_style: FillStyle::Hachure,
             // Default hachure angle (in rad). is -41 degrees

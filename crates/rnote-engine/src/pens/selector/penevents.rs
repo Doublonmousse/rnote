@@ -74,6 +74,10 @@ impl Selector {
 
                 match modify_state {
                     ModifyState::Up | ModifyState::Hover(_) => {
+                        tracing::debug!("up or hover state for modify");
+                        // ok, will be the time to reset the cached size
+                        // now this cached size should be set when elements (strokes) get selected
+
                         // If we click on another, not-already selected stroke while in separate style or
                         // while pressing Shift, we add it to the selection
                         let key_to_add = engine_view
@@ -91,7 +95,16 @@ impl Selector {
                                 .unwrap_or(false)
                         {
                             let key_to_add = key_to_add.unwrap();
-                            engine_view.store.set_selected(key_to_add, true);
+                            // special case here ? what about a resize of 2 elements and then we add a third in the mix
+                            // we need the ref to be added like the rest as well for the resize to work
+                            tracing::debug!("adding an element to the selection with shift");
+
+                            // copy the ghost value for the part that is already selected
+                            engine_view
+                                .store
+                                .copy_ghost_stroke_width(selection);
+
+                            engine_view.store.set_selected(key_to_add, true); 
                             selection.push(key_to_add);
                             if let Some(new_bounds) =
                                 engine_view.store.bounds_for_strokes(selection)
@@ -173,6 +186,14 @@ impl Selector {
                             };
                         } else {
                             // when clicking outside the selection bounds, reset
+                            // where we deselect from our resize
+                            tracing::debug!("resizing selection cancelled");
+                            
+                            // copy ghost sizes
+                            engine_view
+                                .store
+                                .copy_ghost_stroke_width(selection);
+
                             engine_view.store.set_selected_keys(selection, false);
                             self.state = SelectorState::Idle;
 
@@ -260,6 +281,7 @@ impl Selector {
                         start_bounds,
                         start_pos,
                     } => {
+                        tracing::debug!("resize state event");
                         let lock_aspectratio = engine_view
                             .pens_config
                             .selector_config
@@ -312,17 +334,36 @@ impl Selector {
                             let offset_mean = offset_to_start.mean();
                             offset_to_start = start_extents * (offset_mean / start_mean);
                         }
-                        let min_extents = (Self::RESIZE_NODE_SIZE
+                        let min_extents = 1e-14f64*(Self::RESIZE_NODE_SIZE // no need for that if they're outside. Still need to be at least eps
                             + na::Vector2::<f64>::from_element(Self::ROTATE_NODE_DIAMETER))
                             / engine_view.camera.total_zoom();
+                        // this is what has to change. Store the original thing in a single struct of Engine.store at the same place 
+                        // the selection takes place ?
+
+                        // check what the calculation is here 
                         let scale = (start_bounds.extents() + offset_to_start)
                             .maxs(&min_extents)
                             .component_div(&selection_bounds.extents());
+                    
+                        tracing::debug!("start coordinates {:?}",start_bounds.extents() + offset_to_start);
+                        tracing::debug!("coordinates maxes {:?}",min_extents);
+                        tracing::debug!("size {:?}",selection_bounds.extents());
+                        tracing::debug!("scale {:?}", scale);
+                        // check the log to see the change ...
+                        // too small to draw the little resizing things
+                        // do it the xournal way ?
 
                         // resize strokes
+                        // [5] : we do that on the width directly. Needs to change
+                        // but we have to have a "resize has finished" to be in place
                         engine_view
                             .store
-                            .scale_strokes_with_pivot(selection, scale, pivot);
+                            .scale_strokes_with_pivot(selection, scale, pivot); // [4]. 
+                        // this should distinguish between end of resize and resize in progress
+                        // we also need the original size of the elements in addition to their displayed sizes
+                        tracing::debug!("{:?}",scale); // to use for the debug of scale on clipboard paste !!
+                        // scale_strokes_with_pivot is also used in the resize_image part. So we need to copy the ghost values in that case (to do on merge)
+
                         engine_view
                             .store
                             .scale_strokes_images_with_pivot(selection, scale, pivot);
@@ -428,6 +469,8 @@ impl Selector {
                     }
                 };
                 if !new_selection.is_empty() {
+                    // we made a new selection
+                    tracing::debug!("new selection made");
                     engine_view.store.set_selected_keys(&new_selection, true);
                     widget_flags.store_modified = true;
                     widget_flags.deselect_color_setters = true;

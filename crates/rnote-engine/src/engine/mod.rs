@@ -830,7 +830,9 @@ impl Engine {
                 .store
                 .stroke_keys_as_rendered_intersecting_bounds(bounds),
         };
-        self.store.set_selected_keys(&select, true);
+        // [10] : where we select keys
+        tracing::debug!("selection of the strokes within bounds");
+        self.store.set_selected_keys(&select, true); 
         self.doc_resize_autoexpand()
             | self.record(Instant::now())
             | self.update_rendering_current_viewport()

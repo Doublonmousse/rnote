@@ -55,14 +55,35 @@ impl Style {
         }
     }
 
+    /// The ghost stroke width. Available on all styles.
+    pub fn stroke_width_ghost(&self) -> f64 {
+        match self {
+            Style::Smooth(options) => options.stroke_width_ghost,
+            Style::Rough(options) => options.stroke_width_ghost,
+            Style::Textured(options) => options.stroke_width_ghost,
+        }
+    }
+
     /// Set the stroke width. Available on all styles.
     pub fn set_stroke_width(&mut self, stroke_width: f64) {
+        // problem : options.stroke_width of style elements as these are set on resize, not w.r.t the start position
         match self {
             Style::Smooth(options) => options.stroke_width = stroke_width,
             Style::Rough(options) => options.stroke_width = stroke_width,
             Style::Textured(options) => options.stroke_width = stroke_width,
         }
     }
+
+    /// Copy the stroke width onto the ghost stroke width. Available on all styles
+    pub fn copy_ghost_stroke_width(&mut self) {
+        tracing::debug!("Copy stroke width back to the ghost value");
+        match self {
+            Style::Smooth(options) => options.stroke_width_ghost = options.stroke_width,
+            Style::Rough(options) => options.stroke_width_ghost = options.stroke_width,
+            Style::Textured(options) => options.stroke_width_ghost = options.stroke_width,
+        }
+    }
+
 
     /// The margins for bounds which contain the shape.
     pub fn bounds_margin(&self) -> f64 {

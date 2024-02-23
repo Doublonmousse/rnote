@@ -428,6 +428,8 @@ impl RnAppWindow {
         action_selection_select_all.connect_activate(
             clone!(@weak self as appwindow => move |_, _| {
                 let canvas = appwindow.active_tab_wrapper().canvas();
+                // we select here all strokes
+                tracing::debug!("selecting all strokes");
                 let widget_flags = canvas.engine_mut().select_all_strokes();
                 appwindow.handle_widget_flags(widget_flags, &canvas);
             }),

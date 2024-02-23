@@ -180,11 +180,14 @@ impl Transformable for Stroke {
     }
 
     fn scale(&mut self, scale: na::Vector2<f64>) {
+        // [2] one level upper, calls to that here
         match self {
             Self::BrushStroke(brushstroke) => {
+                // [1]
                 brushstroke.scale(scale);
             }
             Self::ShapeStroke(shapestroke) => {
+                // [1]
                 shapestroke.scale(scale);
             }
             Self::TextStroke(textstroke) => {
@@ -669,6 +672,25 @@ impl Stroke {
                     },
                 ))
             }
+        }
+    }
+
+    /// Copy the ghost value 
+    pub fn copy_ghost_stroke_width(&mut self) {
+        // [2] one level upper, calls to that here
+        match self {
+            Self::BrushStroke(brushstroke) => {
+                // [1]
+                brushstroke.copy_ghost_stroke_width();
+            }
+            Self::ShapeStroke(shapestroke) => {
+                // [1]
+                shapestroke.copy_ghost_stroke_width();
+            }
+            _ => {
+                    // do nothing
+                    (); 
+                }
         }
     }
 }

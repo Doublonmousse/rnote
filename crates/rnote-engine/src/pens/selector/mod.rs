@@ -467,7 +467,7 @@ impl Selector {
     /// The radius of the circle when selecting in single mode.
     const SELECTING_SINGLE_CIRCLE_RADIUS: f64 = 4.0;
     /// Resize node size, in surface coordinates.
-    const RESIZE_NODE_SIZE: na::Vector2<f64> = na::vector![18.0, 18.0];
+    const RESIZE_NODE_SIZE: na::Vector2<f64> = na::vector![18.0, 18.0]; //non lie a la taille de ce qui est drawn !!
     /// Rotate node diameter, in surface coordinates.
     const ROTATE_NODE_DIAMETER: f64 = 18.0;
     /// The outline color when drawing a selection
@@ -492,22 +492,35 @@ impl Selector {
     }
 
     fn resize_node_bounds(position: ResizeCorner, selection_bounds: Aabb, camera: &Camera) -> Aabb {
+        // also to see here [XXX]
         let total_zoom = camera.total_zoom();
         match position {
             ResizeCorner::TopLeft => Aabb::from_half_extents(
-                na::point![selection_bounds.mins[0], selection_bounds.mins[1]],
+                na::point![
+                    selection_bounds.mins[0] - Self::RESIZE_NODE_SIZE[0] * 0.5 / total_zoom,
+                    selection_bounds.mins[1] - Self::RESIZE_NODE_SIZE[1] * 0.5 / total_zoom
+                ],
                 Self::RESIZE_NODE_SIZE * 0.5 / total_zoom,
             ),
             ResizeCorner::TopRight => Aabb::from_half_extents(
-                na::point![selection_bounds.maxs[0], selection_bounds.mins[1]],
+                na::point![
+                    selection_bounds.maxs[0] + Self::RESIZE_NODE_SIZE[0] * 0.5 / total_zoom,
+                    selection_bounds.mins[1] - Self::RESIZE_NODE_SIZE[1] * 0.5 / total_zoom
+                ],
                 Self::RESIZE_NODE_SIZE * 0.5 / total_zoom,
             ),
             ResizeCorner::BottomLeft => Aabb::from_half_extents(
-                na::point![selection_bounds.mins[0], selection_bounds.maxs[1]],
+                na::point![
+                    selection_bounds.mins[0] - Self::RESIZE_NODE_SIZE[0] * 0.5 / total_zoom,
+                    selection_bounds.maxs[1] + Self::RESIZE_NODE_SIZE[1] * 0.5 / total_zoom
+                ],
                 Self::RESIZE_NODE_SIZE * 0.5 / total_zoom,
             ),
             ResizeCorner::BottomRight => Aabb::from_half_extents(
-                na::point![selection_bounds.maxs[0], selection_bounds.maxs[1]],
+                na::point![
+                    selection_bounds.maxs[0] + Self::RESIZE_NODE_SIZE[0] * 0.5 / total_zoom,
+                    selection_bounds.maxs[1] + Self::RESIZE_NODE_SIZE[1] * 0.5 / total_zoom
+                ],
                 Self::RESIZE_NODE_SIZE * 0.5 / total_zoom,
             ),
         }
@@ -612,6 +625,8 @@ impl Selector {
             _ => PenState::Up,
         };
 
+        // [XXX] : ui that is drawn
+
         // Selection rect
         let selection_rect = selection_bounds.to_kurbo_rect();
 
@@ -659,7 +674,7 @@ impl Selector {
         // so that the inner shapes become the exterior for correct clipping
         clip_path.extend(
             kurbo::Rect::new(
-                selection_bounds.maxs[0] + Self::OUTLINE_STROKE_WIDTH / total_zoom,
+                selection_bounds.maxs[0] + Self::OUTLINE_STROKE_WIDTH / total_zoom, // just to see
                 selection_bounds.mins[1] - Self::OUTLINE_STROKE_WIDTH / total_zoom,
                 selection_bounds.mins[0] - Self::OUTLINE_STROKE_WIDTH / total_zoom,
                 selection_bounds.maxs[1] + Self::OUTLINE_STROKE_WIDTH / total_zoom,
@@ -791,6 +806,7 @@ impl Selector {
 }
 
 fn cancel_selection(selection: &[StrokeKey], engine_view: &mut EngineViewMut) -> WidgetFlags {
+    tracing::debug!("cancelling selection");
     let mut widget_flags = WidgetFlags::default();
     engine_view.store.set_selected_keys(selection, false);
     engine_view.store.update_geometry_for_strokes(selection);
