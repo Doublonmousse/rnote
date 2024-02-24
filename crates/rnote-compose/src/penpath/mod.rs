@@ -92,10 +92,10 @@ impl Transformable for PenPath {
         });
     }
 
-    fn scale(&mut self, scale: na::Vector2<f64>) {
-        self.start.scale(scale);
+    fn scale(&mut self, scale_stroke: na::Vector2<f64>, scale_resize:na::Vector2<f64>) {
+        self.start.scale(scale_stroke,scale_resize);
         self.segments.iter_mut().for_each(|segment| {
-            segment.scale(scale);
+            segment.scale(scale_stroke,scale_resize);
         });
     }
 }

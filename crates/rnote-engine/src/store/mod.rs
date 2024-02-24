@@ -95,6 +95,9 @@ pub struct StrokeStore {
     /// Needs to be updated with `update_with_key()` when strokes changed their geometry or position!
     #[serde(skip)]
     key_tree: KeyTree,
+    /// initial size of the selection, used to change stroke width with respect to that initial size
+    #[serde(skip)]
+    pub initial_size_selection: Option<na::Vector2<f64>>,
 }
 
 impl Default for StrokeStore {
@@ -113,6 +116,7 @@ impl Default for StrokeStore {
             key_tree: KeyTree::default(),
 
             chrono_counter: 0,
+            initial_size_selection:None,
         }
     }
 }

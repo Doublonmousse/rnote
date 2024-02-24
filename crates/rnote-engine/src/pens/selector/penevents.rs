@@ -336,22 +336,26 @@ impl Selector {
                         }
 
                         let min_extents = na::vector![1e-2f64,1e-2f64]/engine_view.camera.total_zoom();
-                        let scale = (start_bounds.extents() + offset_to_start)
+                        let scale_stroke = (start_bounds.extents() + offset_to_start)
                             .maxs(&min_extents)
-                            .component_div(&selection_bounds.extents());
-                    
+                            .component_div(&engine_view.store.initial_size_selection.unwrap()); // some dangerous unwrap here ...
+                        
+                        let scale_resize = (start_bounds.extents() + offset_to_start)
+                            .maxs(&min_extents)
+                            .component_div(&selection_bounds.extents()); // some dangerous unwrap here ...
+                        
                         // debug traces here just for info
                         tracing::debug!("start coordinates {:?}",start_bounds.extents() + offset_to_start);
                         tracing::debug!("coordinates maxes {:?}",min_extents);
                         tracing::debug!("size {:?}",selection_bounds.extents());
-                        tracing::debug!("scale {:?}", scale);
+                        tracing::debug!("scale {:?} {:?}", scale_stroke,scale_resize);
 
                         // resize strokes
                         // [5] : we do that on the width directly. Needs to change
                         // but we have to have a "resize has finished" to be in place
                         engine_view
                             .store
-                            .scale_strokes_with_pivot(selection, scale, pivot); // [4]. 
+                            .scale_strokes_with_pivot(selection, scale_stroke,scale_resize, pivot); // [4]. 
                         // this should distinguish between end of resize and resize in progress
                         // we also need the original size of the elements in addition to their displayed sizes
                         tracing::debug!("{:?}",scale); // to use for the debug of scale on clipboard paste !!
@@ -359,10 +363,10 @@ impl Selector {
 
                         engine_view
                             .store
-                            .scale_strokes_images_with_pivot(selection, scale, pivot);
+                            .scale_strokes_images_with_pivot(selection, scale_resize, pivot);
                         *selection_bounds = selection_bounds
                             .translate(-pivot)
-                            .scale_non_uniform(scale)
+                            .scale_non_uniform(scale_resize)
                             .translate(pivot);
 
                         // possibly nudge camera

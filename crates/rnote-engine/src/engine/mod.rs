@@ -812,6 +812,7 @@ impl Engine {
         let widget_flags = self.change_pen_style(PenStyle::Selector);
         self.store
             .set_selected_keys(&self.store.selection_keys_as_rendered(), false);
+        self.store.initial_size_selection = None;
         widget_flags
             | self.current_pen_update_state()
             | self.doc_resize_autoexpand()
@@ -832,7 +833,14 @@ impl Engine {
         };
         // [10] : where we select keys
         tracing::debug!("selection of the strokes within bounds");
-        self.store.set_selected_keys(&select, true); 
+        self.store.set_selected_keys(&select, true);
+        // get the size of the selection ?
+        let selection_keys = self.store.selection_keys_as_rendered();
+        self.store.initial_size_selection = match self.store.bounds_for_strokes(&selection_keys) {
+            None => None,
+            Some(aabb) => Some(aabb.extents())
+        }; 
+        // self.store. 
         self.doc_resize_autoexpand()
             | self.record(Instant::now())
             | self.update_rendering_current_viewport()

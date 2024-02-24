@@ -77,19 +77,19 @@ impl Transformable for Segment {
         }
     }
 
-    fn scale(&mut self, scale: na::Vector2<f64>) {
+    fn scale(&mut self, scale_stroke: na::Vector2<f64>, scale_resize:na::Vector2<f64>) {
         match self {
             Self::LineTo { end } => {
-                end.pos = end.pos.component_mul(&scale);
+                end.pos = end.pos.component_mul(&scale_resize);
             }
             Self::QuadBezTo { cp, end } => {
-                *cp = cp.component_mul(&scale);
-                end.pos = end.pos.component_mul(&scale);
+                *cp = cp.component_mul(&scale_resize);
+                end.pos = end.pos.component_mul(&scale_resize);
             }
             Self::CubBezTo { cp1, cp2, end } => {
-                *cp1 = cp1.component_mul(&scale);
-                *cp2 = cp2.component_mul(&scale);
-                end.pos = end.pos.component_mul(&scale);
+                *cp1 = cp1.component_mul(&scale_resize);
+                *cp2 = cp2.component_mul(&scale_resize);
+                end.pos = end.pos.component_mul(&scale_resize);
             }
         }
     }

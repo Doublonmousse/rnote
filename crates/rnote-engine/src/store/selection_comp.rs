@@ -58,7 +58,15 @@ impl StrokeStore {
     pub(crate) fn set_selected_keys(&mut self, keys: &[StrokeKey], selected: bool) {
         keys.iter().for_each(|&key| {
             self.set_selected(key, selected);
-        })
+        });
+        // update selection bounds
+        // duplicate ?
+        let selection_keys = self.selection_keys_as_rendered();
+
+        self.initial_size_selection = match self.bounds_for_strokes(&selection_keys) {
+            None => None,
+            Some(aabb) => Some(aabb.extents())
+        }; 
     }
 
     pub(crate) fn selection_keys_unordered(&self) -> Vec<StrokeKey> {

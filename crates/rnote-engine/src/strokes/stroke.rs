@@ -179,25 +179,25 @@ impl Transformable for Stroke {
         }
     }
 
-    fn scale(&mut self, scale: na::Vector2<f64>) {
+    fn scale(&mut self, scale_stroke: na::Vector2<f64>, scale_resize:na::Vector2<f64>) {
         // [2] one level upper, calls to that here
         match self {
             Self::BrushStroke(brushstroke) => {
                 // [1]
-                brushstroke.scale(scale);
+                brushstroke.scale(scale_stroke,scale_resize);
             }
             Self::ShapeStroke(shapestroke) => {
                 // [1]
-                shapestroke.scale(scale);
+                shapestroke.scale(scale_stroke,scale_resize);
             }
             Self::TextStroke(textstroke) => {
-                textstroke.scale(scale);
+                textstroke.scale(scale_stroke,scale_resize);
             }
             Self::VectorImage(vectorimage) => {
-                vectorimage.scale(scale);
+                vectorimage.scale(scale_stroke,scale_resize);
             }
             Self::BitmapImage(bitmapimage) => {
-                bitmapimage.scale(scale);
+                bitmapimage.scale(scale_stroke,scale_resize);
             }
         }
     }
@@ -689,7 +689,6 @@ impl Stroke {
             }
             _ => {
                     // do nothing
-                    (); 
                 }
         }
     }

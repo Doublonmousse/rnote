@@ -91,15 +91,15 @@ impl Transformable for ShapeStroke {
     fn rotate(&mut self, angle: f64, center: na::Point2<f64>) {
         self.shape.rotate(angle, center);
     }
-    fn scale(&mut self, scale: na::Vector2<f64>) {
+    fn scale(&mut self, scale_stroke: na::Vector2<f64>, scale_resize:na::Vector2<f64>) {
         // [2]
         // should be called for transformations (selection tool) and the new resize mechanisms
         // but in all cases the end thing is selected so everything resynced on deselecting
-        self.shape.scale(scale);
-        let scale_uniform = (scale[0] + scale[1]) / 2.;
+        self.shape.scale(scale_stroke,scale_resize);
+        let scale_uniform = (scale_stroke[0] + scale_stroke[1]) / 2.;
         self.style
-            .set_stroke_width(self.style.stroke_width() * scale_uniform);
-            // .set_stroke_width(self.style.stroke_width_ghost() * scale_uniform);
+            // .set_stroke_width(self.style.stroke_width() * scale_uniform);
+            .set_stroke_width(self.style.stroke_width_ghost() * scale_uniform);
     }
 }
 

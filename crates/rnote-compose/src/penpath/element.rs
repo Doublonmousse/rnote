@@ -32,8 +32,8 @@ impl Transformable for Element {
         self.pos = isometry.transform_point(&self.pos.into()).coords;
     }
 
-    fn scale(&mut self, scale: na::Vector2<f64>) {
-        self.pos = self.pos.component_mul(&scale);
+    fn scale(&mut self, scale_stroke: na::Vector2<f64>, scale_resize:na::Vector2<f64>) {
+        self.pos = self.pos.component_mul(&scale_resize);
     }
 }
 
