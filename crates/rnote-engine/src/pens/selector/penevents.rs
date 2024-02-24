@@ -358,7 +358,6 @@ impl Selector {
                             .scale_strokes_with_pivot(selection, scale_stroke,scale_resize, pivot); // [4]. 
                         // this should distinguish between end of resize and resize in progress
                         // we also need the original size of the elements in addition to their displayed sizes
-                        tracing::debug!("{:?}",scale); // to use for the debug of scale on clipboard paste !!
                         // scale_strokes_with_pivot is also used in the resize_image part. So we need to copy the ghost values in that case (to do on merge)
 
                         engine_view

@@ -50,8 +50,8 @@ impl Transformable for Transform {
         self.append_rotation_wrt_point_mut(angle, center);
     }
 
-    fn scale(&mut self, scale: na::Vector2<f64>) {
-        self.append_scale_mut(scale);
+    fn scale(&mut self, scale_stroke: na::Vector2<f64>, scale_resize:na::Vector2<f64>) {
+        self.append_scale_mut(scale_resize);
     }
 }
 

@@ -128,8 +128,8 @@ impl Transformable for VectorImage {
         self.rectangle.rotate(angle, center);
     }
 
-    fn scale(&mut self, scale: na::Vector2<f64>) {
-        self.rectangle.scale(scale);
+    fn scale(&mut self, scale_stroke: na::Vector2<f64>, scale_resize:na::Vector2<f64>) {
+        self.rectangle.scale(scale_stroke,scale_resize);
     }
 }
 

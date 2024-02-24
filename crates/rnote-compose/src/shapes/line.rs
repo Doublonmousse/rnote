@@ -34,9 +34,9 @@ impl Transformable for Line {
         self.end = isometry.transform_point(&self.end.into()).coords;
     }
 
-    fn scale(&mut self, scale: na::Vector2<f64>) {
-        self.start = self.start.component_mul(&scale);
-        self.end = self.end.component_mul(&scale);
+    fn scale(&mut self, scale_stroke: na::Vector2<f64>, scale_resize:na::Vector2<f64>) {
+        self.start = self.start.component_mul(&scale_resize);
+        self.end = self.end.component_mul(&scale_resize);
     }
 }
 

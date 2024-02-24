@@ -434,7 +434,7 @@ impl StrokeStore {
                 render_comp.state = RenderCompState::Dirty;
 
                 for image in render_comp.images.iter_mut() {
-                    image.scale(scale);
+                    image.scale(scale,scale);
                 }
 
                 #[cfg(feature = "ui")]

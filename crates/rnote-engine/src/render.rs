@@ -169,8 +169,8 @@ impl Transformable for Image {
         self.rect.rotate(angle, center)
     }
 
-    fn scale(&mut self, scale: na::Vector2<f64>) {
-        self.rect.scale(scale)
+    fn scale(&mut self, scale_stroke: na::Vector2<f64>, scale_resize:na::Vector2<f64>) {
+        self.rect.scale(scale_stroke,scale_resize)
     }
 }
 
