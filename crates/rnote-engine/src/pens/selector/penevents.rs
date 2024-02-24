@@ -334,24 +334,17 @@ impl Selector {
                             let offset_mean = offset_to_start.mean();
                             offset_to_start = start_extents * (offset_mean / start_mean);
                         }
-                        let min_extents = 1e-14f64*(Self::RESIZE_NODE_SIZE // no need for that if they're outside. Still need to be at least eps
-                            + na::Vector2::<f64>::from_element(Self::ROTATE_NODE_DIAMETER))
-                            / engine_view.camera.total_zoom();
-                        // this is what has to change. Store the original thing in a single struct of Engine.store at the same place 
-                        // the selection takes place ?
 
-                        // check what the calculation is here 
+                        let min_extents = na::vector![1e-2f64,1e-2f64]/engine_view.camera.total_zoom();
                         let scale = (start_bounds.extents() + offset_to_start)
                             .maxs(&min_extents)
                             .component_div(&selection_bounds.extents());
                     
+                        // debug traces here just for info
                         tracing::debug!("start coordinates {:?}",start_bounds.extents() + offset_to_start);
                         tracing::debug!("coordinates maxes {:?}",min_extents);
                         tracing::debug!("size {:?}",selection_bounds.extents());
                         tracing::debug!("scale {:?}", scale);
-                        // check the log to see the change ...
-                        // too small to draw the little resizing things
-                        // do it the xournal way ?
 
                         // resize strokes
                         // [5] : we do that on the width directly. Needs to change
