@@ -77,7 +77,7 @@ impl Transformable for Segment {
         }
     }
 
-    fn scale(&mut self, scale_stroke: na::Vector2<f64>, scale_resize:na::Vector2<f64>) {
+    fn scale(&mut self, scale_stroke: na::Vector2<f64>, scale_resize: na::Vector2<f64>) {
         match self {
             Self::LineTo { end } => {
                 end.pos = end.pos.component_mul(&scale_resize);

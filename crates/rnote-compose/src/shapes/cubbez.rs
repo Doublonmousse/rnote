@@ -44,7 +44,7 @@ impl Transformable for CubicBezier {
         self.end = isometry.transform_point(&self.end.into()).coords;
     }
 
-    fn scale(&mut self, scale_stroke: na::Vector2<f64>, scale_resize:na::Vector2<f64>) {
+    fn scale(&mut self, scale_stroke: na::Vector2<f64>, scale_resize: na::Vector2<f64>) {
         self.start = self.start.component_mul(&scale_resize);
         self.cp1 = self.cp1.component_mul(&scale_resize);
         self.cp2 = self.cp2.component_mul(&scale_resize);

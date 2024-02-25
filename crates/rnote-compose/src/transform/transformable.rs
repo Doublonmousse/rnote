@@ -5,5 +5,5 @@ pub trait Transformable {
     /// Rotate by the given angle (in radians).
     fn rotate(&mut self, angle: f64, center: na::Point2<f64>);
     /// Scale by the given scale-factor.
-    fn scale(&mut self, scale_stroke: na::Vector2<f64>, scale_resize:na::Vector2<f64>);
+    fn scale(&mut self, scale_stroke: na::Vector2<f64>, scale_resize: na::Vector2<f64>);
 }

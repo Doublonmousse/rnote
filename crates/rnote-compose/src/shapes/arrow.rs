@@ -52,7 +52,7 @@ impl Transformable for Arrow {
         self.tip = isometry.transform_point(&self.tip.into()).coords;
     }
 
-    fn scale(&mut self, scale_stroke: na::Vector2<f64>, scale_resize:na::Vector2<f64>) {
+    fn scale(&mut self, scale_stroke: na::Vector2<f64>, scale_resize: na::Vector2<f64>) {
         self.start = self.start.component_mul(&scale_resize);
         self.tip = self.tip.component_mul(&scale_resize);
     }

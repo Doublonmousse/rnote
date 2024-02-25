@@ -22,7 +22,6 @@ pub struct SmoothOptions {
     /// Pressure curve.
     #[serde(rename = "pressure_curve")]
     pub pressure_curve: PressureCurve,
-
 }
 
 impl Default for SmoothOptions {

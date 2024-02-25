@@ -529,7 +529,7 @@ impl Selector {
     fn rotate_node_sphere(selection_bounds: Aabb, camera: &Camera) -> BoundingSphere {
         let total_zoom = camera.total_zoom();
         let pos = na::point![
-            selection_bounds.maxs[0] + Self::RESIZE_NODE_SIZE[0]/(2.0*total_zoom),
+            selection_bounds.maxs[0] + Self::RESIZE_NODE_SIZE[0] / (2.0 * total_zoom),
             (selection_bounds.maxs[1] + selection_bounds.mins[1]) * 0.5
         ];
         BoundingSphere::new(pos, Self::ROTATE_NODE_DIAMETER * 0.5 / total_zoom)

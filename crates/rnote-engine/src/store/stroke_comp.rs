@@ -395,7 +395,12 @@ impl StrokeStore {
     /// Scale the strokes with the factor.
     ///
     /// The strokes then need to update their rendering.
-    pub(crate) fn scale_strokes(&mut self, keys: &[StrokeKey],scale_stroke: na::Vector2<f64>, scale_resize:na::Vector2<f64>) {
+    pub(crate) fn scale_strokes(
+        &mut self,
+        keys: &[StrokeKey],
+        scale_stroke: na::Vector2<f64>,
+        scale_resize: na::Vector2<f64>,
+    ) {
         // [3] one level upper
         keys.iter().for_each(|&key| {
             if let Some(stroke) = Arc::make_mut(&mut self.stroke_components)
@@ -404,7 +409,7 @@ impl StrokeStore {
             {
                 {
                     // rotate the stroke geometry
-                    stroke.scale(scale_stroke,scale_resize); // our problem down the line
+                    stroke.scale(scale_stroke, scale_resize); // our problem down the line
                     self.key_tree.update_with_key(key, stroke.bounds());
                 }
             }
@@ -418,12 +423,11 @@ impl StrokeStore {
                 .get_mut(key)
                 .map(Arc::make_mut)
             {
-                stroke.copy_ghost_stroke_width(); 
+                stroke.copy_ghost_stroke_width();
                 // some un neccessary call onto nothing, pattern match here instead ?
             }
         })
-    }   
-
+    }
 
     /// Scale the stroke rendering images.
     ///
@@ -462,7 +466,7 @@ impl StrokeStore {
     ) {
         // [4]
         self.translate_strokes(keys, -pivot);
-        self.scale_strokes(keys, scale_stroke,scale_resize); 
+        self.scale_strokes(keys, scale_stroke, scale_resize);
         self.translate_strokes(keys, pivot);
     }
 

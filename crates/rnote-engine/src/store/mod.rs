@@ -116,7 +116,7 @@ impl Default for StrokeStore {
             key_tree: KeyTree::default(),
 
             chrono_counter: 0,
-            initial_size_selection:None,
+            initial_size_selection: None,
         }
     }
 }

@@ -255,10 +255,11 @@ impl Transformable for BrushStroke {
     fn rotate(&mut self, angle: f64, center: na::Point2<f64>) {
         self.path.rotate(angle, center);
     }
-    fn scale(&mut self, scale_stroke: na::Vector2<f64>, scale_resize:na::Vector2<f64>) {
+    fn scale(&mut self, scale_stroke: na::Vector2<f64>, scale_resize: na::Vector2<f64>) {
         // [0]
-        self.path.scale(scale_stroke,scale_resize);
+        self.path.scale(scale_stroke, scale_resize);
         let scale_uniform = (scale_stroke[0] + scale_stroke[1]) / 2.;
+        // let scale_uniform = 1.0f64;
         self.style
             // .set_stroke_width(self.style.stroke_width() * scale_uniform);
             .set_stroke_width(self.style.stroke_width_ghost() * scale_uniform);

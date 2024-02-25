@@ -51,6 +51,17 @@ impl StrokeStore {
         {
             selection_comp.selected = selected;
 
+            // update selection bounds for each
+            let selection_keys = self.selection_keys_as_rendered();
+
+            self.initial_size_selection = match self.bounds_for_strokes(&selection_keys) {
+                None => None,
+                Some(aabb) => Some(aabb.extents()),
+            };
+            // copy if selected or deselected (either way)
+            self.copy_ghost_stroke_width(&[key]);
+            // update
+
             self.update_chrono_to_last(key);
         }
     }
@@ -60,13 +71,6 @@ impl StrokeStore {
             self.set_selected(key, selected);
         });
         // update selection bounds
-        // duplicate ?
-        let selection_keys = self.selection_keys_as_rendered();
-
-        self.initial_size_selection = match self.bounds_for_strokes(&selection_keys) {
-            None => None,
-            Some(aabb) => Some(aabb.extents())
-        }; 
     }
 
     pub(crate) fn selection_keys_unordered(&self) -> Vec<StrokeKey> {

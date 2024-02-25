@@ -38,7 +38,7 @@ impl Transformable for Ellipse {
         self.transform.append_rotation_wrt_point_mut(angle, center)
     }
 
-    fn scale(&mut self, scale_stroke: na::Vector2<f64>, scale_resize:na::Vector2<f64>) {
+    fn scale(&mut self, scale_stroke: na::Vector2<f64>, scale_resize: na::Vector2<f64>) {
         self.transform.append_scale_mut(scale_resize);
     }
 }

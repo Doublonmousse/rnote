@@ -101,31 +101,31 @@ impl Transformable for Shape {
         }
     }
 
-    fn scale(&mut self, scale_stroke: na::Vector2<f64>, scale_resize:na::Vector2<f64>) {
+    fn scale(&mut self, scale_stroke: na::Vector2<f64>, scale_resize: na::Vector2<f64>) {
         match self {
             Self::Line(line) => {
-                line.scale(scale_stroke,scale_resize);
+                line.scale(scale_stroke, scale_resize);
             }
             Self::Arrow(arrow) => {
-                arrow.scale(scale_stroke,scale_resize);
+                arrow.scale(scale_stroke, scale_resize);
             }
             Self::Rectangle(rectangle) => {
-                rectangle.scale(scale_stroke,scale_resize);
+                rectangle.scale(scale_stroke, scale_resize);
             }
             Self::Ellipse(ellipse) => {
-                ellipse.scale(scale_stroke,scale_resize);
+                ellipse.scale(scale_stroke, scale_resize);
             }
             Self::QuadraticBezier(quadbez) => {
-                quadbez.scale(scale_stroke,scale_resize);
+                quadbez.scale(scale_stroke, scale_resize);
             }
             Self::CubicBezier(cubbez) => {
-                cubbez.scale(scale_stroke,scale_resize);
+                cubbez.scale(scale_stroke, scale_resize);
             }
             Self::Polyline(polyline) => {
-                polyline.scale(scale_stroke,scale_resize);
+                polyline.scale(scale_stroke, scale_resize);
             }
             Self::Polygon(polygon) => {
-                polygon.scale(scale_stroke,scale_resize);
+                polygon.scale(scale_stroke, scale_resize);
             }
         }
     }

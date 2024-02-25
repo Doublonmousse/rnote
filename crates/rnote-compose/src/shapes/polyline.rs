@@ -35,7 +35,7 @@ impl Transformable for Polyline {
         }
     }
 
-    fn scale(&mut self, scale_stroke: na::Vector2<f64>, scale_resize:na::Vector2<f64>) {
+    fn scale(&mut self, scale_stroke: na::Vector2<f64>, scale_resize: na::Vector2<f64>) {
         self.start = self.start.component_mul(&scale_resize);
         for p in &mut self.path {
             *p = p.component_mul(&scale_resize);

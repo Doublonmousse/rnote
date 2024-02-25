@@ -84,7 +84,6 @@ impl Style {
         }
     }
 
-
     /// The margins for bounds which contain the shape.
     pub fn bounds_margin(&self) -> f64 {
         match self {

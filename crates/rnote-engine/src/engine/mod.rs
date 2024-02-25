@@ -838,9 +838,9 @@ impl Engine {
         let selection_keys = self.store.selection_keys_as_rendered();
         self.store.initial_size_selection = match self.store.bounds_for_strokes(&selection_keys) {
             None => None,
-            Some(aabb) => Some(aabb.extents())
-        }; 
-        // self.store. 
+            Some(aabb) => Some(aabb.extents()),
+        };
+        // self.store.
         self.doc_resize_autoexpand()
             | self.record(Instant::now())
             | self.update_rendering_current_viewport()

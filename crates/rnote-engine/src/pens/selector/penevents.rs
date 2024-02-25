@@ -99,12 +99,11 @@ impl Selector {
                             // we need the ref to be added like the rest as well for the resize to work
                             tracing::debug!("adding an element to the selection with shift");
 
-                            // copy the ghost value for the part that is already selected
-                            engine_view
-                                .store
-                                .copy_ghost_stroke_width(selection);
+                            // we change the size of the selection, we need to update the ghost stroke to the real stroke width
+                            // in order not to have any issue here
+                            engine_view.store.copy_ghost_stroke_width(selection);
 
-                            engine_view.store.set_selected(key_to_add, true); 
+                            engine_view.store.set_selected(key_to_add, true);
                             selection.push(key_to_add);
                             if let Some(new_bounds) =
                                 engine_view.store.bounds_for_strokes(selection)
@@ -188,11 +187,9 @@ impl Selector {
                             // when clicking outside the selection bounds, reset
                             // where we deselect from our resize
                             tracing::debug!("resizing selection cancelled");
-                            
+
                             // copy ghost sizes
-                            engine_view
-                                .store
-                                .copy_ghost_stroke_width(selection);
+                            engine_view.store.copy_ghost_stroke_width(selection);
 
                             engine_view.store.set_selected_keys(selection, false);
                             self.state = SelectorState::Idle;
@@ -335,34 +332,46 @@ impl Selector {
                             offset_to_start = start_extents * (offset_mean / start_mean);
                         }
 
-                        let min_extents = na::vector![1e-2f64,1e-2f64]/engine_view.camera.total_zoom();
+                        let min_extents =
+                            na::vector![1e-2f64, 1e-2f64] / engine_view.camera.total_zoom();
+
+                        let min_multiplier = na::vector![1e-5f64, 1e-5f64]; // or limit stroke width into the general sizes limits
+                                                                            // check if this is the case or not
                         let scale_stroke = (start_bounds.extents() + offset_to_start)
-                            .maxs(&min_extents)
-                            .component_div(&engine_view.store.initial_size_selection.unwrap()); // some dangerous unwrap here ...
-                        
+                            .component_div(&engine_view.store.initial_size_selection.unwrap())
+                            .maxs(&min_multiplier); // some dangerous unwrap here ...
+
                         let scale_resize = (start_bounds.extents() + offset_to_start)
                             .maxs(&min_extents)
                             .component_div(&selection_bounds.extents()); // some dangerous unwrap here ...
-                        
+
                         // debug traces here just for info
-                        tracing::debug!("start coordinates {:?}",start_bounds.extents() + offset_to_start);
-                        tracing::debug!("coordinates maxes {:?}",min_extents);
-                        tracing::debug!("size {:?}",selection_bounds.extents());
-                        tracing::debug!("scale {:?} {:?}", scale_stroke,scale_resize);
+                        tracing::debug!(
+                            "start coordinates {:?}",
+                            start_bounds.extents() + offset_to_start
+                        );
+                        tracing::debug!("coordinates maxes {:?}", min_extents);
+                        tracing::debug!("size {:?}", selection_bounds.extents());
+                        tracing::debug!("scale {:?} {:?}", scale_stroke, scale_resize);
 
                         // resize strokes
                         // [5] : we do that on the width directly. Needs to change
                         // but we have to have a "resize has finished" to be in place
-                        engine_view
-                            .store
-                            .scale_strokes_with_pivot(selection, scale_stroke,scale_resize, pivot); // [4]. 
-                        // this should distinguish between end of resize and resize in progress
-                        // we also need the original size of the elements in addition to their displayed sizes
-                        // scale_strokes_with_pivot is also used in the resize_image part. So we need to copy the ghost values in that case (to do on merge)
+                        engine_view.store.scale_strokes_with_pivot(
+                            selection,
+                            scale_stroke,
+                            scale_resize,
+                            pivot,
+                        ); // [4].
+                           // this should distinguish between end of resize and resize in progress
+                           // we also need the original size of the elements in addition to their displayed sizes
+                           // scale_strokes_with_pivot is also used in the resize_image part. So we need to copy the ghost values in that case (to do on merge)
 
-                        engine_view
-                            .store
-                            .scale_strokes_images_with_pivot(selection, scale_resize, pivot);
+                        engine_view.store.scale_strokes_images_with_pivot(
+                            selection,
+                            scale_resize,
+                            pivot,
+                        );
                         *selection_bounds = selection_bounds
                             .translate(-pivot)
                             .scale_non_uniform(scale_resize)
