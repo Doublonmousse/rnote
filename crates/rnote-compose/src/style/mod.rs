@@ -66,7 +66,10 @@ impl Style {
 
     /// Set the stroke width. Available on all styles.
     pub fn set_stroke_width(&mut self, stroke_width: f64) {
-        // problem : options.stroke_width of style elements as these are set on resize, not w.r.t the start position
+        // seemingly no limit on the stroke width here ...
+        // maybe we should (can get arbitrarly large or small from the resize alone)
+        // one idea would be : set a min and max and clip here
+        // second idea : scale limits based on the ghost stroke width and scale quantities
         match self {
             Style::Smooth(options) => options.stroke_width = stroke_width,
             Style::Rough(options) => options.stroke_width = stroke_width,

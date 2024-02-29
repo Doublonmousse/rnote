@@ -332,24 +332,45 @@ impl Selector {
                             offset_to_start = start_extents * (offset_mean / start_mean);
                         }
 
-                        let min_extents =
-                            na::vector![1e-2f64, 1e-2f64] / engine_view.camera.total_zoom();
+                        // need to set more reasonable defaults for min size (based on stroke width ? + actual size, NOT just min and max multipliers)
 
+                        // find why this issue only occurs when we start having negative values for the start coordinates
+                        // a.k.a. the start_bounds.extents() + offset_to_start
+
+                        // affect only scale_resize
+                        let min_extents = na::vector![
+                            1e-2f64 / selection_bounds.extents().x,
+                            1e-2f64 / selection_bounds.extents().y
+                        ];
+                        let hundred_lim = na::vector![5f64, 5f64]; // in a frame, noticeable ?
+                                                                   // 2 : 9 frames to catch up
+                                                                   // 5 : 4 frames to catch up if 100 jump
+                        let set_positive = na::vector![1e-15f64, 1e-15f64];
+
+                        let scale_resize = (start_bounds.extents() + offset_to_start)
+                            .maxs(&set_positive) // force positive before division
+                            .component_div(&selection_bounds.extents()) // some dangerous unwrap here ...
+                            .map(|x| if !x.is_finite() { 0.0f64 } else { x })
+                            .maxs(&min_extents); //apply the extent and then we should not be smaller than 0.01 in either directions
+                                                 //.mins(&hundred_lim); // for now commented, would bound the max resize factor
+
+                        // only affects stroke width here
                         let min_multiplier = na::vector![1e-5f64, 1e-5f64]; // or limit stroke width into the general sizes limits
-                                                                            // check if this is the case or not
+                                                                            // check if this is the case or not : NOT checked
                         let scale_stroke = (start_bounds.extents() + offset_to_start)
                             .component_div(&engine_view.store.initial_size_selection.unwrap())
                             .maxs(&min_multiplier); // some dangerous unwrap here ...
-
-                        let scale_resize = (start_bounds.extents() + offset_to_start)
-                            .maxs(&min_extents)
-                            .component_div(&selection_bounds.extents()); // some dangerous unwrap here ...
 
                         // debug traces here just for info
                         tracing::debug!(
                             "start coordinates {:?}",
                             start_bounds.extents() + offset_to_start
                         );
+                        tracing::debug!(
+                            "initial size {:?}",
+                            engine_view.store.initial_size_selection
+                        );
+                        tracing::debug!("selection bounds {:?}", selection_bounds.extents());
                         tracing::debug!("coordinates maxes {:?}", min_extents);
                         tracing::debug!("size {:?}", selection_bounds.extents());
                         tracing::debug!("scale {:?} {:?}", scale_stroke, scale_resize);

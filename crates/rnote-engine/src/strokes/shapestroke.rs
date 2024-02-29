@@ -101,6 +101,10 @@ impl Transformable for ShapeStroke {
         self.style
             // .set_stroke_width(self.style.stroke_width() * scale_uniform);
             .set_stroke_width(self.style.stroke_width_ghost() * scale_uniform);
+        tracing::debug!(
+            "stroke width {:?}",
+            self.style.stroke_width_ghost() * scale_uniform
+        );
     }
 }
 
