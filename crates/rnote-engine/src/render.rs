@@ -306,6 +306,8 @@ impl Image {
         let width_scaled = ((bounds.extents()[0]) * image_scale).round() as u32;
         let height_scaled = ((bounds.extents()[1]) * image_scale).round() as u32;
 
+        tracing::debug!("render width {:?} {:?}", width_scaled, height_scaled);
+
         let mut image_surface = cairo::ImageSurface::create(
             cairo::Format::ARgb32,
             width_scaled as i32,

@@ -353,6 +353,10 @@ impl Selector {
                             .map(|x| if !x.is_finite() { 0.0f64 } else { x })
                             .maxs(&min_extents); //apply the extent and then we should not be smaller than 0.01 in either directions
                                                  //.mins(&hundred_lim); // for now commented, would bound the max resize factor
+                        
+                        if scale_resize.x > 2.0f64 || scale_resize.y > 2.0f64 {
+                            tracing::debug!("large resize that could activate that intermittent stretched image");
+                        }
 
                         // only affects stroke width here
                         let min_multiplier = na::vector![1e-5f64, 1e-5f64]; // or limit stroke width into the general sizes limits
@@ -403,6 +407,8 @@ impl Selector {
                             .camera
                             .nudge_w_pos(element.pos, engine_view.document);
                         widget_flags |= engine_view.document.expand_autoexpand(engine_view.camera);
+
+                        tracing::debug!("regenerate rendering viewport");
                         engine_view.store.regenerate_rendering_in_viewport_threaded(
                             engine_view.tasks_tx.clone(),
                             false,

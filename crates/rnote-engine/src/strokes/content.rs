@@ -42,9 +42,11 @@ where
         viewport: Aabb,
         image_scale: f64,
     ) -> Result<GeneratedContentImages, anyhow::Error> {
-        let bounds = self.bounds();
+        let bounds = self.bounds(); //check the bounds of the shape here
+        tracing::debug!("bounds for shapes as seen by gen_images {:?}", bounds);
 
         if viewport.contains(&bounds) {
+            tracing::debug!("element in viewport");
             Ok(GeneratedContentImages::Full(vec![
                 render::Image::gen_with_piet(
                     |piet_cx| self.draw(piet_cx, image_scale),
@@ -53,6 +55,7 @@ where
                 )?,
             ]))
         } else if let Some(intersection_bounds) = viewport.intersection(&bounds) {
+            tracing::debug!("intersection");
             Ok(GeneratedContentImages::Partial {
                 images: vec![render::Image::gen_with_piet(
                     |piet_cx| self.draw(piet_cx, image_scale),
@@ -62,6 +65,7 @@ where
                 viewport,
             })
         } else {
+            tracing::debug!("out of bounds");
             Ok(GeneratedContentImages::Partial {
                 images: vec![],
                 viewport,
