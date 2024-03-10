@@ -14,6 +14,7 @@
     <property name="content">
       <object class="AdwOverlaySplitView" id="split_view">
         <property name="pin-sidebar">true</property>
+<!--        + pub fn set_sidebar_width_unit(&self, unit: LengthUnit)-->
         <property name="min-sidebar-width">500</property>
         <property name="max-sidebar-width">550</property>
         <property name="sidebar-width-fraction">0.3</property>

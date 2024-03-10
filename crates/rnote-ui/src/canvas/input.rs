@@ -1,5 +1,6 @@
 // Imports
 use super::RnCanvas;
+use adw::glib::subclass::types::ObjectSubclassIsExt;
 use gtk4::{gdk, glib, graphene, prelude::*, Native};
 use rnote_compose::penevent::{KeyboardKey, ModifierKey, PenEvent, PenState, ShortcutKey};
 use rnote_compose::penpath::Element;
@@ -28,6 +29,7 @@ pub(crate) fn handle_pointer_controller_event(
     //std::thread::sleep(std::time::Duration::from_millis(100));
     //super::input::debug_gdk_event(event);
 
+    let mut is_primary_button = false;
     if reject_pointer_input(event, touch_drawing) {
         return (glib::Propagation::Proceed, pen_state);
     }
@@ -46,10 +48,14 @@ pub(crate) fn handle_pointer_controller_event(
 
                 // like in gtk4 'gesturestylus.c:120' stylus proximity is detected this way,
                 // in case ProximityIn & ProximityOut is not reported.
-                if gdk_modifiers.contains(gdk::ModifierType::BUTTON1_MASK) {
+                if gdk_modifiers.contains(gdk::ModifierType::BUTTON1_MASK)
+                    || canvas.engine_ref().primary_button_pressed
+                {
                     pen_state = PenState::Down;
                 } else {
-                    pen_state = PenState::Proximity;
+                    pen_state = PenState::Proximity; //forces the wrong proximity mode on windows ?
+                                                     // no, essential to put PenStateProximity
+                                                     // maybe force to Down state when the pressure is not zero ?
                 }
             } else {
                 // only handle no pressed button, primary and secondary mouse buttons.
@@ -90,6 +96,8 @@ pub(crate) fn handle_pointer_controller_event(
             if handle_shortcut_key {
                 let shortcut_key = retrieve_button_shortcut_key(gdk_button, is_stylus);
 
+                is_primary_button = shortcut_key == Some(ShortcutKey::StylusPrimaryButton);
+
                 if let Some(shortcut_key) = shortcut_key {
                     let (ep, wf) = canvas
                         .engine_mut()
@@ -106,6 +114,13 @@ pub(crate) fn handle_pointer_controller_event(
             tracing::trace!(
                 "canvas event ButtonRelease - gdk_button: {gdk_button}, is_stylus: {is_stylus}"
             );
+
+            match gdk_button {
+                gdk::BUTTON_SECONDARY => {
+                    is_primary_button = true; //reuse this variable here
+                }
+                _ => {}
+            };
 
             if is_stylus {
                 if gdk_button == gdk::BUTTON_PRIMARY
@@ -168,6 +183,16 @@ pub(crate) fn handle_pointer_controller_event(
         for (element, event_time) in elements {
             tracing::trace!("handle pen event element - element: {element:?}, pen_state: {pen_state:?}, event_time_delta: {:?}, modifier_keys: {modifier_keys:?}, pen_mode: {pen_mode:?}", now.duration_since(event_time));
 
+            if is_primary_button && gdk_event_type == gdk::EventType::ButtonRelease {
+                //release of the primary button
+                canvas.engine_mut().set_primary_button(false);
+                //force a temporary pen_state::Up to obtain the selection here
+                pen_state = PenState::Up; //exactly as the correct thing would act (if the linux-surface behavior is anything to go by)
+            }
+            if is_primary_button && gdk_event_type == gdk::EventType::ButtonPress {
+                // what we do is that we add a variable that is set to true as long as the primary button is pressed and released as well after
+                canvas.engine_mut().set_primary_button(true);
+            }
             match pen_state {
                 PenState::Up => {
                     canvas.enable_drawing_cursor(false);
@@ -235,33 +260,51 @@ pub(crate) fn handle_key_controller_key_pressed(
     let modifier_keys = retrieve_modifier_keys(gdk_modifiers);
     let shortcut_key = retrieve_keyboard_shortcut_key(gdk_key, gdk_modifiers);
 
-    let (propagation, widget_flags) = if let Some(shortcut_key) = shortcut_key {
-        canvas
-            .engine_mut()
-            .handle_pressed_shortcut_key(shortcut_key, now)
-    } else {
-        canvas.engine_mut().handle_pen_event(
-            PenEvent::KeyPressed {
-                keyboard_key,
-                modifier_keys,
-            },
-            None,
-            now,
-        )
-    };
+    match (keyboard_key, canvas.imp().dnd_status.get()) {
+        (KeyboardKey::ShiftLeft, true) | (KeyboardKey::ShiftRight, true) => {
+            //we only capture here if there is a drag and drop in progress
+            canvas.imp().dnd_respect_borders.set(true);
+            glib::Propagation::Stop
+        }
+        _ => {
+            let (propagation, widget_flags) = if let Some(shortcut_key) = shortcut_key {
+                canvas
+                    .engine_mut()
+                    .handle_pressed_shortcut_key(shortcut_key, now)
+            } else {
+                canvas.engine_mut().handle_pen_event(
+                    PenEvent::KeyPressed {
+                        keyboard_key,
+                        modifier_keys,
+                    },
+                    None,
+                    now,
+                )
+            };
 
-    canvas.emit_handle_widget_flags(widget_flags);
-    propagation.into_glib()
+            canvas.emit_handle_widget_flags(widget_flags);
+            propagation.into_glib()
+        }
+    }
 }
 
 pub(crate) fn handle_key_controller_key_released(
-    _canvas: &RnCanvas,
+    canvas: &RnCanvas,
     gdk_key: gdk::Key,
     gdk_modifiers: gdk::ModifierType,
 ) {
     tracing::trace!(
         "canvas event key released - gdk_key: {gdk_key:?}, gdk_modifiers: {gdk_modifiers:?}"
     );
+    let keyboard_key = retrieve_keyboard_key(gdk_key);
+
+    match (keyboard_key, canvas.imp().dnd_status.get()) {
+        (KeyboardKey::ShiftLeft, true) | (KeyboardKey::ShiftRight, true) => {
+            // we only remove the modifier if the drag and drop is in progress
+            canvas.imp().dnd_respect_borders.set(false);
+        }
+        _ => {}
+    }
 }
 
 pub(crate) fn handle_imcontext_text_commit(canvas: &RnCanvas, text: &str) {
@@ -447,6 +490,7 @@ fn retrieve_pen_mode(event: &gdk::Event) -> Option<PenMode> {
     }
 }
 
+/// correspond to KeyboardCtrlSpace
 pub(crate) fn retrieve_keyboard_shortcut_key(
     gdk_key: gdk::Key,
     modifier: gdk::ModifierType,

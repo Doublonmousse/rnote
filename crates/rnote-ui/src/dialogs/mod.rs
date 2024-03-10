@@ -451,6 +451,13 @@ pub(crate) async fn dialog_edit_selected_workspace(appwindow: &RnAppWindow) {
     let icon_picker: RnIconPicker = builder
         .object("edit_selected_workspace_icon_picker")
         .unwrap();
+    let clamp: adw::Clamp = builder
+        .object("dialog_edit_selected_workspace_clamp")
+        .unwrap();
+
+    if appwindow.gtk_scale() {
+        clamp.set_unit(adw::LengthUnit::Px);
+    }
 
     preview_row.init(appwindow);
     dialog.set_transient_for(Some(appwindow));

@@ -170,6 +170,10 @@ pub struct Engine {
     #[serde(rename = "pen_sounds")]
     pen_sounds: bool,
 
+    // safer fix for the surface button
+    #[serde(skip)]
+    pub primary_button_pressed: bool,
+
     #[serde(skip)]
     audioplayer: Option<AudioPlayer>,
     #[serde(skip)]
@@ -185,6 +189,12 @@ pub struct Engine {
     #[cfg(feature = "ui")]
     #[serde(skip)]
     background_rendernodes: Vec<gtk4::gsk::RenderNode>,
+    // Origin indicator rendering
+    #[serde(skip)]
+    origin_indicator_image: Option<render::Image>,
+    #[cfg(feature = "ui")]
+    #[serde(skip)]
+    origin_indicator_rendernode: Option<gtk4::gsk::RenderNode>,
 }
 
 impl Default for Engine {
@@ -201,6 +211,8 @@ impl Default for Engine {
             export_prefs: ExportPrefs::default(),
             pen_sounds: false,
 
+            primary_button_pressed: false,
+
             audioplayer: None,
             visual_debug: false,
             tasks_tx: EngineTaskSender(tasks_tx),
@@ -208,6 +220,9 @@ impl Default for Engine {
             background_tile_image: None,
             #[cfg(feature = "ui")]
             background_rendernodes: Vec::default(),
+            origin_indicator_image: None,
+            #[cfg(feature = "ui")]
+            origin_indicator_rendernode: None,
         }
     }
 }
@@ -287,6 +302,10 @@ impl Engine {
         widget_flags
     }
 
+    pub fn set_primary_button(&mut self, primary_button: bool) {
+        self.primary_button_pressed = primary_button;
+    }
+
     /// Takes a snapshot of the current state.
     pub fn take_snapshot(&self) -> EngineSnapshot {
         let mut store_history_entry = self.store.create_history_entry();
@@ -318,7 +337,7 @@ impl Engine {
         let mut widget_flags = self.store.import_from_snapshot(&snapshot)
             | self.doc_resize_autoexpand()
             | self.current_pen_update_state()
-            | self.background_regenerate_pattern()
+            | self.background_rendering_regenerate()
             | self.update_content_rendering_current_viewport();
         widget_flags.refresh_ui = true;
         widget_flags.view_modified = true;
@@ -444,7 +463,7 @@ impl Engine {
                 let all_strokes = self.store.stroke_keys_unordered();
                 self.store.set_rendering_dirty_for_strokes(&all_strokes);
                 widget_flags |= self.doc_resize_autoexpand()
-                    | self.background_regenerate_pattern()
+                    | self.background_rendering_regenerate()
                     | self.update_rendering_current_viewport();
             }
             EngineTask::Quit => {
@@ -564,7 +583,7 @@ impl Engine {
         let mut widget_flags = WidgetFlags::default();
         if active {
             widget_flags |= self.reinstall_pen_current_style()
-                | self.background_regenerate_pattern()
+                | self.background_rendering_regenerate()
                 | self.update_content_rendering_current_viewport();
             widget_flags.view_modified = true;
         } else {
@@ -631,7 +650,7 @@ impl Engine {
         self.store
             .set_rendering_dirty_for_strokes(&self.store.stroke_keys_as_rendered());
         self.camera.set_scale_factor(scale_factor)
-            | self.background_regenerate_pattern()
+            | self.background_rendering_regenerate()
             | self.update_content_rendering_current_viewport()
     }
 
@@ -680,7 +699,7 @@ impl Engine {
     ///
     /// Background and content rendering then needs to be updated.
     pub fn doc_expand_autoexpand(&mut self) -> WidgetFlags {
-        self.document.expand_autoexpand(&self.camera)
+        self.document.expand_autoexpand(&self.camera, &self.store)
     }
 
     /// Add a page to the document when in fixed size layout.

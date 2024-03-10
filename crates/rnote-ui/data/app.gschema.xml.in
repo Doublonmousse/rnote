@@ -13,6 +13,10 @@
       <default>false</default>
       <summary>Default window maximized behaviour</summary>
     </key>
+    <key name="gdk-scale" type="b">
+      <default>false</default>
+      <summary>Force Scale to 2</summary>
+    </key>
     <key name="sidebar-show" type="b">
       <default>false</default>
       <summary>Whether the sidebar is shown or not</summary>
@@ -164,6 +168,10 @@
     <key name="engine-config" type="s">
       <default>''</default>
       <summary>the engine configuration</summary>
+    </key>
+    <key name="fractional-width" type="u">
+      <default>30</default>
+      <summary>the sidebar width</summary>
     </key>
   </schema>
 </schemalist>

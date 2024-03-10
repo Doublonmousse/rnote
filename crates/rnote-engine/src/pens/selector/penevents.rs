@@ -51,7 +51,9 @@ impl Selector {
                 widget_flags |= engine_view
                     .camera
                     .nudge_w_pos(element.pos, engine_view.document);
-                widget_flags |= engine_view.document.expand_autoexpand(engine_view.camera);
+                widget_flags |= engine_view
+                    .document
+                    .expand_autoexpand(engine_view.camera, engine_view.store);
                 engine_view.store.regenerate_rendering_in_viewport_threaded(
                     engine_view.tasks_tx.clone(),
                     false,
@@ -234,7 +236,9 @@ impl Selector {
                         widget_flags |= engine_view
                             .camera
                             .nudge_w_pos(element.pos, engine_view.document);
-                        widget_flags |= engine_view.document.expand_autoexpand(engine_view.camera);
+                        widget_flags |= engine_view
+                            .document
+                            .expand_autoexpand(engine_view.camera, engine_view.store);
                         engine_view.store.regenerate_rendering_in_viewport_threaded(
                             engine_view.tasks_tx.clone(),
                             false,
@@ -406,9 +410,9 @@ impl Selector {
                         widget_flags |= engine_view
                             .camera
                             .nudge_w_pos(element.pos, engine_view.document);
-                        widget_flags |= engine_view.document.expand_autoexpand(engine_view.camera);
-
-                        tracing::debug!("regenerate rendering viewport");
+                        widget_flags |= engine_view
+                            .document
+                            .expand_autoexpand(engine_view.camera, engine_view.store);
                         engine_view.store.regenerate_rendering_in_viewport_threaded(
                             engine_view.tasks_tx.clone(),
                             false,

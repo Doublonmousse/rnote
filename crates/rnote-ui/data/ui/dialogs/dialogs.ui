@@ -83,7 +83,7 @@ Changes which are not saved will be permanently lost.</property>
       <action-widget response="apply" default="true">edit_selected_workspace_button_apply</action-widget>
     </action-widgets>
     <child>
-      <object class="AdwClamp">
+      <object class="AdwClamp" id="dialog_edit_selected_workspace_clamp">
         <property name="maximum-size">800</property>
         <property name="tightening-threshold">600</property>
         <property name="hexpand">true</property>

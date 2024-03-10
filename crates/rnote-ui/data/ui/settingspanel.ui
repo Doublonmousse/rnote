@@ -20,7 +20,7 @@
         <property name="propagate-natural-height">false</property>
         <property name="window-placement">top-left</property>
         <child>
-          <object class="AdwClamp">
+          <object class="AdwClamp" id="clamp">
             <property name="margin-top">32</property>
             <property name="margin-bottom">24</property>
             <property name="margin-start">24</property>
@@ -512,6 +512,29 @@ on a drawing pad</property>
                     </child>
                   </object>
                 </child>
+                <!-- Interface Group -->
+                <child>
+                  <object class="AdwPreferencesGroup">
+                    <property name="title" translatable="yes">Interface</property>
+                    <!--                  need to set a true/false for the windows GDK_SCALE thing-->
+                    <child>
+                      <object class="AdwSwitchRow" id="init_gdkscale">
+                        <property name="title" translatable="yes">Set GDK_SCALE to 2 </property>
+                        <property name="subtitle" translatable="yes">Force the GDK_SCALE to 2 (Windows only). Requires a restart
+                        </property>
+                      </object>
+                    </child>
+                    <!--                    need to set a settings for the fractional width-->
+                    <child>
+                      <object class="AdwSpinRow" id="fractional_width">
+                        <property name="title" translatable="yes">Fractional width</property>
+                        <property name="subtitle" translatable="yes">Set the fractional width of the sidebar in % Defaults to 30.</property>
+                        <property name="adjustment">format_fractional_width_adj</property>
+                        <property name="digits">0</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
               </object>
             </property>
           </object>
@@ -543,6 +566,12 @@ on a drawing pad</property>
       <property name="upper">9999</property>
       <property name="lower">5</property>
       <property name="value">120</property>
+    </object>
+    <object class="GtkAdjustment" id="format_fractional_width_adj">
+      <property name="step-increment">1</property>
+      <property name="upper">50</property>
+      <property name="lower">20</property>
+      <property name="value">30</property>
     </object>
   </template>
 </interface>

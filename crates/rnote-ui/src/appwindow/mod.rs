@@ -84,6 +84,17 @@ impl RnAppWindow {
         self.set_property("focus-mode", focus_mode.to_value());
     }
 
+    #[allow(unused)]
+    pub(crate) fn gtk_scale(&self) -> bool {
+        self.imp()
+            .sidebar
+            .clone()
+            .downcast::<RnSidebar>()
+            .unwrap()
+            .settings_panel()
+            .get_gdk_scale() // very bad name for now
+    }
+
     pub(crate) fn app(&self) -> RnApp {
         self.application().unwrap().downcast::<RnApp>().unwrap()
     }
@@ -185,6 +196,8 @@ impl RnAppWindow {
 
     // Returns true if the flags indicate that any loop that handles the flags should be quit. (usually an async event loop)
     pub(crate) fn handle_widget_flags(&self, widget_flags: WidgetFlags, canvas: &RnCanvas) {
+        //tracing::debug!("handling widget flags: '{widget_flags:?}'");
+
         if widget_flags.redraw {
             canvas.queue_draw();
         }
@@ -254,6 +267,33 @@ impl RnAppWindow {
             .tabview()
             .selected_page()
             .expect("there must always be one active tab")
+    }
+
+    pub(crate) fn n_tabs_open(&self) -> usize {
+        self.imp().overlays.tabview().pages().n_items() as usize
+    }
+
+    /// Returns a vector of all tabs of the current windows
+    pub(crate) fn get_all_tabs(&self) -> Vec<RnCanvasWrapper> {
+        let n_tabs = self.n_tabs_open();
+        let mut tabs = Vec::with_capacity(n_tabs);
+
+        for i in 0..n_tabs {
+            let wrapper = self
+                .imp()
+                .overlays
+                .tabview()
+                .pages()
+                .item(i as u32)
+                .unwrap()
+                .downcast::<adw::TabPage>()
+                .unwrap()
+                .child()
+                .downcast::<crate::RnCanvasWrapper>()
+                .unwrap();
+            tabs.push(wrapper);
+        }
+        tabs
     }
 
     /// Get the active (selected) tab page child.
@@ -355,7 +395,8 @@ impl RnAppWindow {
                 ))
             })
             .find(|(_, output_file_path)| {
-                same_file::is_same_file(output_file_path, input_file_path.as_ref()).unwrap_or(false)
+                crate::utils::paths_abs_eq(output_file_path, input_file_path.as_ref())
+                    .unwrap_or(false)
             })
             .map(|(found, _)| found)
     }
@@ -439,10 +480,11 @@ impl RnAppWindow {
         input_file: gio::File,
         target_pos: Option<na::Vector2<f64>>,
         rnote_file_new_tab: bool,
+        respect_border: bool,
     ) {
         self.overlays().progressbar_start_pulsing();
         match self
-            .try_open_file(input_file, target_pos, rnote_file_new_tab)
+            .try_open_file(input_file, target_pos, rnote_file_new_tab, respect_border)
             .await
         {
             Ok(true) => {
@@ -469,6 +511,7 @@ impl RnAppWindow {
         input_file: gio::File,
         target_pos: Option<na::Vector2<f64>>,
         rnote_file_new_tab: bool,
+        respect_border: bool,
     ) -> anyhow::Result<bool> {
         let file_imported = match FileType::lookup_file_type(&input_file) {
             FileType::RnoteFile => {
@@ -511,7 +554,7 @@ impl RnAppWindow {
                 let canvas = self.active_tab_wrapper().canvas();
                 let (bytes, _) = input_file.load_bytes_future().await?;
                 canvas
-                    .load_in_vectorimage_bytes(bytes.to_vec(), target_pos)
+                    .load_in_vectorimage_bytes(bytes.to_vec(), target_pos, respect_border)
                     .await?;
                 true
             }
@@ -519,7 +562,7 @@ impl RnAppWindow {
                 let canvas = self.active_tab_wrapper().canvas();
                 let (bytes, _) = input_file.load_bytes_future().await?;
                 canvas
-                    .load_in_bitmapimage_bytes(bytes.to_vec(), target_pos)
+                    .load_in_bitmapimage_bytes(bytes.to_vec(), target_pos, respect_border)
                     .await?;
                 true
             }

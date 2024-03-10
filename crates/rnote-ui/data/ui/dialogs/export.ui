@@ -24,7 +24,7 @@
       <action-widget response="apply" default="true">export_doc_button_confirm</action-widget>
     </action-widgets>
     <child>
-      <object class="AdwClamp">
+      <object class="AdwClamp" id="clamp">
         <property name="maximum-size">1000</property>
         <property name="tightening-threshold">900</property>
         <property name="hexpand">true</property>

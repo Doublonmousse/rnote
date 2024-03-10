@@ -1,3 +1,4 @@
+
 <div align="center">
 <img src="https://raw.githubusercontent.com/flxzt/rnote/main/crates/rnote-ui/data/icons/scalable/apps/rnote.svg" width="300"></img>
 </div><br><br><br>
@@ -217,6 +218,7 @@ If you have drawn something cool in Rnote and want to share it, submit a PR to a
         <img alt="Pikachu" src="https://raw.githubusercontent.com/flxzt/rnote/main/misc/drawings/pikachu.png" height="400">
         <img alt="Love" src="https://raw.githubusercontent.com/flxzt/rnote/main/misc/drawings/love.png" height="400">
         <img alt="Suits" src="https://raw.githubusercontent.com/flxzt/rnote/main/misc/drawings/suits.png" height="400">
+        <img alt="Nature's cat" src="https://raw.githubusercontent.com/flxzt/rnote/main/misc/drawings/natureza_gato.png" height="400">
 </div><br>
 
 ## Building

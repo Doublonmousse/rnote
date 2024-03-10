@@ -1,5 +1,9 @@
 // Imports
 use crate::config;
+
+#[cfg(target_os = "windows")]
+use winreg;
+
 use std::ffi::OsStr;
 use std::path::{Component, Path, PathBuf};
 
@@ -67,12 +71,28 @@ pub(crate) fn setup_env() -> anyhow::Result<()> {
         let data_dir = data_dir()?;
         let lib_dir = lib_dir()?;
 
-        std::env::set_var("XDG_DATA_DIRS", data_dir);
+        std::env::set_var("XDG_DATA_DIRS", data_dir.clone());
+
+        #[cfg(target_os = "windows")]
+        {
+            let key = winreg::RegKey::predef(winreg::enums::HKEY_CURRENT_USER);
+            let app_seting_key = key.open_subkey("software\\GSettings\\com\\github\\flxzt\\rnote");
+
+            let gdk_workaround = match app_seting_key {
+                Err(_) => false,
+                Ok(key) => key.get_value("gdk-scale").unwrap_or(0u32) == 1,
+            };
+
+            tracing::debug!("{:?}", gdk_workaround);
+            if gdk_workaround {
+                std::env::set_var("GDK_SCALE", "2");
+            }
+        }
+
         std::env::set_var(
             "GDK_PIXBUF_MODULEDIR",
             lib_dir.join("gdk-pixbuf-2.0\\2.10.0\\loaders"),
         );
-        //std::env::set_var("RUST_LOG", "rnote=debug");
     } else if cfg!(target_os = "macos") {
         let canonicalized_exec_dir = exec_parent_dir()?.canonicalize()?;
 

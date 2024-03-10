@@ -2,6 +2,7 @@
 use super::pensconfig::toolsconfig::ToolStyle;
 use super::PenBehaviour;
 use super::PenStyle;
+use crate::document::background::PatternStyle;
 use crate::engine::{EngineView, EngineViewMut};
 use crate::store::StrokeKey;
 use crate::{Camera, DrawableOnDoc, WidgetFlags};
@@ -99,6 +100,90 @@ impl DrawableOnDoc for VerticalSpaceTool {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct VerticalSpaceGridTool {
+    start_pos_y: f64,
+    pos_y: f64,
+    strokes_below: Vec<StrokeKey>,
+}
+
+impl Default for VerticalSpaceGridTool {
+    fn default() -> Self {
+        Self {
+            start_pos_y: 0.0,
+            pos_y: 0.0,
+            strokes_below: vec![],
+        }
+    }
+}
+
+impl VerticalSpaceGridTool {
+    const Y_OFFSET_THRESHOLD: f64 = 0.1;
+    const OFFSET_LINE_COLOR: piet::Color = color::GNOME_BLUES[3];
+    const THRESHOLD_LINE_WIDTH: f64 = 3.0;
+    const THRESHOLD_LINE_DASH_PATTERN: [f64; 2] = [9.0, 6.0];
+    const OFFSET_LINE_WIDTH: f64 = 1.5;
+    const FILL_COLOR: piet::Color = color::GNOME_BRIGHTS[2].with_a8(23);
+    const THRESHOLD_LINE_COLOR: piet::Color = color::GNOME_GREENS[4].with_a8(240);
+}
+
+impl DrawableOnDoc for VerticalSpaceGridTool {
+    fn bounds_on_doc(&self, engine_view: &EngineView) -> Option<Aabb> {
+        let viewport = engine_view.camera.viewport();
+
+        let x = viewport.mins[0];
+        let y = self.start_pos_y;
+        let width = viewport.extents()[0];
+        let height = self.pos_y - self.start_pos_y;
+        let tool_bounds = Aabb::new_positive(na::point![x, y], na::point![x + width, y + height]);
+
+        Some(tool_bounds)
+    }
+
+    fn draw_on_doc(
+        &self,
+        cx: &mut piet_cairo::CairoRenderContext,
+        engine_view: &EngineView,
+    ) -> anyhow::Result<()> {
+        cx.save().map_err(|e| anyhow::anyhow!("{e:?}"))?;
+
+        let total_zoom = engine_view.camera.total_zoom();
+        let viewport = engine_view.camera.viewport();
+        let x = viewport.mins[0];
+        let y = self.start_pos_y;
+        let width = viewport.extents()[0];
+        let height = self.pos_y - self.start_pos_y;
+        let tool_bounds = Aabb::new_positive(na::point![x, y], na::point![x + width, y + height]);
+
+        let tool_bounds_rect = kurbo::Rect::from_points(
+            tool_bounds.mins.coords.to_kurbo_point(),
+            tool_bounds.maxs.coords.to_kurbo_point(),
+        );
+        cx.fill(tool_bounds_rect, &Self::FILL_COLOR);
+
+        let threshold_line =
+            kurbo::Line::new(kurbo::Point::new(x, y), kurbo::Point::new(x + width, y));
+        cx.stroke_styled(
+            threshold_line,
+            &Self::THRESHOLD_LINE_COLOR,
+            Self::THRESHOLD_LINE_WIDTH / total_zoom,
+            &piet::StrokeStyle::new().dash_pattern(&Self::THRESHOLD_LINE_DASH_PATTERN),
+        );
+
+        let offset_line = kurbo::Line::new(
+            kurbo::Point::new(x, y + height),
+            kurbo::Point::new(x + width, y + height),
+        );
+        cx.stroke(
+            offset_line,
+            &Self::OFFSET_LINE_COLOR,
+            Self::OFFSET_LINE_WIDTH / total_zoom,
+        );
+
+        cx.restore().map_err(|e| anyhow::anyhow!("{e:?}"))?;
+        Ok(())
+    }
+}
 #[derive(Clone, Debug)]
 pub struct OffsetCameraTool {
     pub start: na::Vector2<f64>,
@@ -263,6 +348,7 @@ impl Default for ToolsState {
 #[derive(Clone, Debug, Default)]
 pub struct Tools {
     pub verticalspace_tool: VerticalSpaceTool,
+    pub verticalspacegrid_tool: VerticalSpaceGridTool,
     pub offsetcamera_tool: OffsetCameraTool,
     pub zoom_tool: ZoomTool,
     state: ToolsState,
@@ -303,6 +389,16 @@ impl PenBehaviour for Tools {
                         self.verticalspace_tool.strokes_below = engine_view
                             .store
                             .keys_below_y(self.verticalspace_tool.pos_y);
+                    }
+                    ToolStyle::VerticalSpaceGrid => {
+                        //Maybe modify further for page by page modifications
+                        //With arguments, would need to change it further
+                        self.verticalspacegrid_tool.start_pos_y = element.pos[1];
+                        self.verticalspacegrid_tool.pos_y = element.pos[1];
+
+                        self.verticalspacegrid_tool.strokes_below = engine_view
+                            .store
+                            .keys_below_y(self.verticalspacegrid_tool.pos_y);
                     }
                     ToolStyle::OffsetCamera => {
                         self.offsetcamera_tool.start = element.pos;
@@ -364,12 +460,58 @@ impl PenBehaviour for Tools {
 
                             widget_flags.store_modified = true;
                         }
-
                         // possibly nudge camera
                         widget_flags |= engine_view
                             .camera
                             .nudge_w_pos(element.pos, engine_view.document);
-                        widget_flags |= engine_view.document.expand_autoexpand(engine_view.camera);
+                        widget_flags |= engine_view
+                            .document
+                            .expand_autoexpand(engine_view.camera, engine_view.store);
+                        engine_view.store.regenerate_rendering_in_viewport_threaded(
+                            engine_view.tasks_tx.clone(),
+                            false,
+                            engine_view.camera.viewport(),
+                            engine_view.camera.image_scale(),
+                        );
+                    }
+                    ToolStyle::VerticalSpaceGrid => {
+                        let y_offset = match engine_view.document.background.pattern {
+                            PatternStyle::None => {
+                                element.pos[1] - self.verticalspacegrid_tool.pos_y
+                            }
+                            //Only activate this grid behavior when a grid pattern is selected (not None)
+                            _ => {
+                                (element.pos[1] - self.verticalspacegrid_tool.pos_y)
+                                    - ((element.pos[1] - self.verticalspacegrid_tool.pos_y)
+                                        % engine_view.document.background.pattern_size[1])
+                            }
+                        };
+                        if y_offset.abs() > VerticalSpaceGridTool::Y_OFFSET_THRESHOLD {
+                            engine_view.store.translate_strokes(
+                                &self.verticalspacegrid_tool.strokes_below,
+                                na::vector![0.0, y_offset],
+                            );
+                            engine_view.store.translate_strokes_images(
+                                &self.verticalspacegrid_tool.strokes_below,
+                                na::vector![0.0, y_offset],
+                            );
+
+                            self.verticalspacegrid_tool.pos_y =
+                                match engine_view.document.background.pattern {
+                                    PatternStyle::None => element.pos[1],
+                                    _ => self.verticalspacegrid_tool.pos_y + y_offset,
+                                };
+                            // update the ref displacement point to which subsequent displacements will be compared
+
+                            widget_flags.store_modified = true;
+                        }
+                        // possibly nudge camera
+                        widget_flags |= engine_view
+                            .camera
+                            .nudge_w_pos(element.pos, engine_view.document);
+                        widget_flags |= engine_view
+                            .document
+                            .expand_autoexpand(engine_view.camera, engine_view.store);
                         engine_view.store.regenerate_rendering_in_viewport_threaded(
                             engine_view.tasks_tx.clone(),
                             false,
@@ -415,7 +557,9 @@ impl PenBehaviour for Tools {
                                 .camera
                                 .zoom_w_timeout(new_zoom, engine_view.tasks_tx.clone());
                             widget_flags |= engine_view.camera.set_viewport_center(viewport_center)
-                                | engine_view.document.expand_autoexpand(engine_view.camera);
+                                | engine_view
+                                    .document
+                                    .expand_autoexpand(engine_view.camera, engine_view.store);
                         }
                         self.zoom_tool.current_surface_coord = new_surface_coord;
                     }
@@ -433,6 +577,14 @@ impl PenBehaviour for Tools {
                         engine_view
                             .store
                             .update_geometry_for_strokes(&self.verticalspace_tool.strokes_below);
+
+                        widget_flags |= engine_view.store.record(Instant::now());
+                        widget_flags.store_modified = true;
+                    }
+                    ToolStyle::VerticalSpaceGrid => {
+                        engine_view.store.update_geometry_for_strokes(
+                            &self.verticalspacegrid_tool.strokes_below,
+                        );
 
                         widget_flags |= engine_view.store.record(Instant::now());
                         widget_flags.store_modified = true;
@@ -503,6 +655,9 @@ impl DrawableOnDoc for Tools {
         match self.state {
             ToolsState::Active => match engine_view.pens_config.tools_config.style {
                 ToolStyle::VerticalSpace => self.verticalspace_tool.bounds_on_doc(engine_view),
+                ToolStyle::VerticalSpaceGrid => {
+                    self.verticalspacegrid_tool.bounds_on_doc(engine_view)
+                }
                 ToolStyle::OffsetCamera => self.offsetcamera_tool.bounds_on_doc(engine_view),
                 ToolStyle::Zoom => self.zoom_tool.bounds_on_doc(engine_view),
             },
@@ -520,6 +675,9 @@ impl DrawableOnDoc for Tools {
         match &engine_view.pens_config.tools_config.style {
             ToolStyle::VerticalSpace => {
                 self.verticalspace_tool.draw_on_doc(cx, engine_view)?;
+            }
+            ToolStyle::VerticalSpaceGrid => {
+                self.verticalspacegrid_tool.draw_on_doc(cx, engine_view)?;
             }
             ToolStyle::OffsetCamera => {
                 self.offsetcamera_tool.draw_on_doc(cx, engine_view)?;
@@ -540,6 +698,10 @@ impl Tools {
             ToolStyle::VerticalSpace => {
                 self.verticalspace_tool.start_pos_y = 0.0;
                 self.verticalspace_tool.pos_y = 0.0;
+            }
+            ToolStyle::VerticalSpaceGrid => {
+                self.verticalspacegrid_tool.start_pos_y = 0.0;
+                self.verticalspacegrid_tool.pos_y = 0.0;
             }
             ToolStyle::OffsetCamera => {
                 self.offsetcamera_tool.start = na::Vector2::zeros();

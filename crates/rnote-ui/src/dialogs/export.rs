@@ -97,6 +97,14 @@ pub(crate) async fn dialog_export_doc_w_prefs(appwindow: &RnAppWindow, canvas: &
     let export_file_button: Button = builder.object("export_doc_export_file_button").unwrap();
     let preview: RnStrokeContentPreview = builder.object("export_doc_preview").unwrap();
 
+    //set the unit to pixel for the clamp
+    let clamp: adw::Clamp = builder.object("clamp").unwrap();
+
+    if appwindow.gtk_scale() {
+        clamp.set_unit(adw::LengthUnit::Px);
+        tracing::debug!("setting unit to px, the gdk scale toggle is activated");
+    }
+
     let initial_doc_export_prefs = canvas.engine_ref().export_prefs.doc_export_prefs;
     let doc_layout = canvas.engine_ref().document.layout;
     dialog.set_transient_for(Some(appwindow));

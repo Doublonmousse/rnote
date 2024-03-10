@@ -34,6 +34,8 @@ mod imp {
         #[template_child]
         pub(crate) settings_scroller: TemplateChild<ScrolledWindow>,
         #[template_child]
+        pub(crate) clamp: TemplateChild<adw::Clamp>,
+        #[template_child]
         pub(crate) general_autosave_row: TemplateChild<adw::SwitchRow>,
         #[template_child]
         pub(crate) general_autosave_interval_secs_row: TemplateChild<adw::SpinRow>,
@@ -111,6 +113,12 @@ mod imp {
         pub(crate) penshortcut_drawing_pad_button_2: TemplateChild<RnPenShortcutRow>,
         #[template_child]
         pub(crate) penshortcut_drawing_pad_button_3: TemplateChild<RnPenShortcutRow>,
+        #[template_child]
+        pub(crate) init_gdkscale: TemplateChild<adw::SwitchRow>,
+        #[template_child]
+        pub(crate) fractional_width: TemplateChild<adw::SpinRow>,
+        #[template_child]
+        pub(crate) format_fractional_width_adj: TemplateChild<Adjustment>,
     }
 
     #[glib::object_subclass]
@@ -322,6 +330,10 @@ impl RnSettingsPanel {
         self.imp().settings_scroller.clone()
     }
 
+    pub(crate) fn get_clamp(&self) -> adw::Clamp {
+        self.imp().clamp.clone()
+    }
+
     pub(crate) fn general_regular_cursor_picker(&self) -> RnIconPicker {
         self.imp().general_regular_cursor_picker.clone()
     }
@@ -340,6 +352,16 @@ impl RnSettingsPanel {
 
     pub(crate) fn general_inertial_scrolling_row(&self) -> adw::SwitchRow {
         self.imp().general_inertial_scrolling_row.clone()
+    }
+
+    // for the gdk
+    pub(crate) fn init_gdkscale(&self) -> adw::SwitchRow {
+        self.imp().init_gdkscale.clone()
+    }
+
+    // get the value
+    pub(crate) fn get_gdk_scale(&self) -> bool {
+        self.imp().init_gdkscale.get().is_active()
     }
 
     pub(crate) fn document_layout(&self) -> Layout {
@@ -484,6 +506,22 @@ impl RnSettingsPanel {
             .bidirectional()
             .build();
 
+        imp.fractional_width
+            .get()
+            .bind_property("value", appwindow, "fractional-width")
+            .sync_create()
+            .bidirectional()
+            .build();
+
+        // for now close to the thing we want to copy, to move after
+        imp.format_fractional_width_adj.connect_value_changed(
+            clone!(@weak appwindow => move |adj| {
+                let percentage = adj.value();
+                tracing::debug!("setting the sidebar to {:?}", percentage);
+                appwindow.split_view().set_sidebar_width_fraction(percentage as f64 / 100.0f64);
+            }),
+        );
+
         let set_overlays_margins = |appwindow: &RnAppWindow, row_active: bool| {
             let (m1, m2) = if row_active { (18, 72) } else { (9, 63) };
             appwindow.overlays().colorpicker().set_margin_top(m1);
@@ -602,7 +640,7 @@ impl RnSettingsPanel {
 
                 if !canvas.engine_ref().document.background.color.approx_eq_f32(background_color) {
                     canvas.engine_mut().document.background.color = background_color;
-                    let mut widget_flags = canvas.engine_mut().background_regenerate_pattern();
+                    let mut widget_flags = canvas.engine_mut().background_rendering_regenerate();
                     widget_flags.store_modified = true;
                     appwindow.handle_widget_flags(widget_flags, &canvas);
                 }
@@ -663,7 +701,7 @@ impl RnSettingsPanel {
 
             if canvas.engine_ref().document.background.pattern != pattern {
                 canvas.engine_mut().document.background.pattern = pattern;
-                let mut widget_flags = canvas.engine_mut().background_regenerate_pattern();
+                let mut widget_flags = canvas.engine_mut().background_rendering_regenerate();
                 widget_flags.store_modified = true;
                 appwindow.handle_widget_flags(widget_flags, &canvas);
             }
@@ -676,7 +714,7 @@ impl RnSettingsPanel {
 
                 if !canvas.engine_ref().document.background.pattern_color.approx_eq_f32(pattern_color) {
                     canvas.engine_mut().document.background.pattern_color = pattern_color;
-                    let mut widget_flags = canvas.engine_mut().background_regenerate_pattern();
+                    let mut widget_flags = canvas.engine_mut().background_rendering_regenerate();
                     widget_flags.store_modified = true;
                     appwindow.handle_widget_flags(widget_flags, &canvas);
                 }
@@ -694,7 +732,7 @@ impl RnSettingsPanel {
 
                         if !canvas.engine_ref().document.background.pattern_size.approx_eq(&pattern_size) {
                             canvas.engine_mut().document.background.pattern_size = pattern_size;
-                            let mut widget_flags = canvas.engine_mut().background_regenerate_pattern();
+                            let mut widget_flags = canvas.engine_mut().background_rendering_regenerate();
                             widget_flags.store_modified = true;
                             appwindow.handle_widget_flags(widget_flags, &canvas);
                         }
@@ -712,7 +750,7 @@ impl RnSettingsPanel {
 
                         if !canvas.engine_ref().document.background.pattern_size.approx_eq(&pattern_size) {
                             canvas.engine_mut().document.background.pattern_size = pattern_size;
-                            let mut widget_flags = canvas.engine_mut().background_regenerate_pattern();
+                            let mut widget_flags = canvas.engine_mut().background_rendering_regenerate();
                             widget_flags.store_modified = true;
                             appwindow.handle_widget_flags(widget_flags, &canvas);
                         }
@@ -728,7 +766,7 @@ impl RnSettingsPanel {
                         engine.document.background.color = engine.document.background.color.to_inverted_brightness_color();
                         engine.document.background.pattern_color = engine.document.background.pattern_color.to_inverted_brightness_color();
                         engine.document.format.border_color = engine.document.format.border_color.to_inverted_brightness_color();
-                        engine.background_regenerate_pattern()
+                        engine.background_rendering_regenerate()
                     };
 
                     widget_flags.refresh_ui = true;

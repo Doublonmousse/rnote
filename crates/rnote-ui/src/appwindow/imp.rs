@@ -23,6 +23,7 @@ pub(crate) struct RnAppWindow {
     pub(crate) block_pinch_zoom: Cell<bool>,
     pub(crate) touch_drawing: Cell<bool>,
     pub(crate) focus_mode: Cell<bool>,
+    pub(crate) fractional_width: Cell<u32>,
 
     #[template_child]
     pub(crate) main_header: TemplateChild<RnMainHeader>,
@@ -49,6 +50,7 @@ impl Default for RnAppWindow {
             block_pinch_zoom: Cell::new(false),
             touch_drawing: Cell::new(false),
             focus_mode: Cell::new(false),
+            fractional_width: Cell::new(30),
 
             main_header: TemplateChild::<RnMainHeader>::default(),
             split_view: TemplateChild::<adw::OverlaySplitView>::default(),
@@ -130,6 +132,11 @@ impl ObjectImpl for RnAppWindow {
                 glib::ParamSpecBoolean::builder("focus-mode")
                     .default_value(false)
                     .build(),
+                glib::ParamSpecUInt::builder("fractional-width")
+                    .minimum(20)
+                    .maximum(50)
+                    .default_value(30)
+                    .build(),
             ]
         });
         PROPERTIES.as_ref()
@@ -143,6 +150,7 @@ impl ObjectImpl for RnAppWindow {
             "block-pinch-zoom" => self.block_pinch_zoom.get().to_value(),
             "touch-drawing" => self.touch_drawing.get().to_value(),
             "focus-mode" => self.focus_mode.get().to_value(),
+            "fractional-width" => self.fractional_width.get().to_value(),
             _ => unimplemented!(),
         }
     }
@@ -173,6 +181,13 @@ impl ObjectImpl for RnAppWindow {
                 if self.autosave.get() {
                     self.update_autosave_handler();
                 }
+            }
+            "fractional-width" => {
+                let frac_width = value
+                    .get::<u32>()
+                    .expect("The value needs to be of type `u32`");
+
+                self.fractional_width.replace(frac_width);
             }
             "righthanded" => {
                 let righthanded = value
@@ -235,26 +250,39 @@ impl RnAppWindow {
     fn update_autosave_handler(&self) {
         let obj = self.obj();
 
-        if let Some(removed_id) = self.autosave_source_id.borrow_mut().replace(glib::source::timeout_add_seconds_local(self.autosave_interval_secs.get(),
+        if let Some(removed_id) = self.autosave_source_id.borrow_mut().replace(
+            glib::source::timeout_add_seconds_local(
+                self.autosave_interval_secs.get(),
                 clone!(@weak obj as appwindow => @default-return glib::ControlFlow::Break, move || {
-                    let canvas = appwindow.active_tab_wrapper().canvas();
+                    // save for all tabs opened in the current window that have unsaved changes
+                    let tabs = appwindow.get_all_tabs();
 
-                    if let Some(output_file) = canvas.output_file() {
-                        glib::spawn_future_local(clone!(@weak canvas, @weak appwindow => async move {
-                            if let Err(e) = canvas.save_document_to_file(&output_file).await {
-                                canvas.set_output_file(None);
-
-                                tracing::error!("Saving document failed, Err: `{e:?}`");
-                                appwindow.overlays().dispatch_toast_error(&gettext("Saving document failed"));
+                    for (i, tab) in tabs.iter().enumerate() {
+                        let canvas = tab.canvas();
+                        if canvas.unsaved_changes() {
+                            if let Some(output_file) = canvas.output_file() {
+                                tracing::trace!(
+                                    "there are unsaved changes on the tab {:?} with a file on disk, saving",i
+                                );
+                                glib::spawn_future_local(clone!(@weak canvas, @weak appwindow => async move {
+                                    if let Err(e) = canvas.save_document_to_file(&output_file).await {
+                                        canvas.set_output_file(None);
+                                        tracing::error!("Saving document failed, Err: `{e:?}`");
+                                        appwindow
+                                            .overlays()
+                                            .dispatch_toast_error(&gettext("Saving document failed"));
+                                    };
+                                }));
                             }
                         }
-                    ));
-                }
+                    }
 
-                glib::ControlFlow::Continue
-            }))) {
-                removed_id.remove();
-            }
+                    glib::ControlFlow::Continue
+                }),
+            ),
+        ) {
+            removed_id.remove();
+        }
     }
 
     fn setup_input(&self) {
