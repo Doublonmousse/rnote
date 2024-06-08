@@ -52,7 +52,7 @@ num-derive = "0.4.2"
 num-traits = "0.2.19"
 numeric-sort = "0.1.1"
 once_cell = "1.19"
-open = "5.1"
+opener = {version = "0.7.0", features=["reveal"]}
 palette = "0.7.6"
 parry2d-f64 = { version = "0.15.1", features = ["serde-serialize"] }
 path-absolutize = "3.1"

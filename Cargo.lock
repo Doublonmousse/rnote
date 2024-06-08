@@ -410,10 +410,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "built"
-version = "0.7.3"
+name = "bstr"
+version = "1.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c6a6c0b39c38fd754ac338b00a88066436389c0f029da5d37d1e01091d9b7c17"
+checksum = "05efc5cfd9110c8416e471df0e96702d58690178e206e61b7173706673c93706"
+dependencies = [
+ "memchr",
+ "regex-automata 0.4.6",
+ "serde",
+]
 
 [[package]]
 name = "bumpalo"
@@ -809,6 +814,17 @@ name = "data-url"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5c297a1c74b71ae29df00c3e22dd9534821d60eb9af5a0192823fa2acea70c2a"
+
+[[package]]
+name = "dbus"
+version = "0.9.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1bb21987b9fb1613058ba3843121dd18b163b254d8a6e797e144cbac14d96d1b"
+dependencies = [
+ "libc",
+ "libdbus-sys",
+ "winapi",
+]
 
 [[package]]
 name = "derive_builder"
@@ -2349,10 +2365,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "noop_proc_macro"
-version = "0.3.0"
+name = "normpath"
+version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0676bb32a98c1a483ce53e500a81ad9c3d5b3f7c920c28c24e9cb0980d0b5bc8"
+checksum = "5831952a9476f2fed74b77d74182fa5ddc4d21c72ec45a333b250e3ed0272804"
+dependencies = [
+ "windows-sys 0.52.0",
+]
+
 
 [[package]]
 name = "notify"
@@ -2560,14 +2580,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3fdb12b2476b595f9358c5161aa467c2438859caa136dec86c26fdd2efe17b92"
 
 [[package]]
-name = "open"
-version = "5.1.4"
+name = "opener"
+version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b5ca541f22b1c46d4bb9801014f234758ab4297e7870b904b6a8415b980a7388"
+checksum = "f8df34be653210fbe9ffaff41d3b92721c56ce82dfee58ee684f9afb5e3a90c0"
 dependencies = [
- "is-wsl",
- "libc",
- "pathdiff",
+ "bstr",
+ "dbus",
+ "normpath",
+ "url",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -2725,12 +2747,6 @@ checksum = "07ba0ad7e047712414213ff67533e6dd477af0a4e1d14fb52343e53d30ea9397"
 dependencies = [
  "once_cell",
 ]
-
-[[package]]
-name = "pathdiff"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8835116a5c179084a830efb3adc117ab007512b535bc1a21c991d3b32a6b44dd"
 
 [[package]]
 name = "percent-encoding"
@@ -3268,7 +3284,7 @@ dependencies = [
  "num-traits",
  "numeric-sort",
  "once_cell",
- "open",
+ "opener",
  "palette",
  "parry2d-f64",
  "path-absolutize",
@@ -3305,7 +3321,7 @@ dependencies = [
  "dialoguer",
  "indicatif",
  "nalgebra",
- "open",
+ "opener",
  "parry2d-f64",
  "rnote-compose",
  "rnote-engine",
