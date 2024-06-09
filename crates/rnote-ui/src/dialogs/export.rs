@@ -256,11 +256,10 @@ pub(crate) async fn dialog_export_doc_w_prefs(appwindow: &RnAppWindow, canvas: &
                                     appwindow.overlays().dispatch_toast_error(&gettext("Exporting document failed"));
                                     return;
                             };
-                                if let Err(e) = opener::open(&folder_path_string) {
-                                    tracing::error!("Opening the parent folder '{folder_path_string}' in the file manager failed, Err: {e:?}");
+                                if let Err(e) = opener::reveal(&folder_path_string) {
+                                    tracing::error!("Revealing the parent folder '{folder_path_string}' in the file manager failed, Err: {e:?}");
                                     appwindow.overlays().dispatch_toast_error(&gettext("Failed to open the file in the file manager"));
                                 }
-                            })
                         }
                     ), crate::overlays::TEXT_TOAST_TIMEOUT_DEFAULT, &mut None);
                     appwindow.overlays().progressbar_finish();
