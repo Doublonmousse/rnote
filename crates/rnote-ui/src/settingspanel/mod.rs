@@ -41,6 +41,8 @@ mod imp {
         #[template_child]
         pub(crate) general_show_scrollbars_row: TemplateChild<adw::SwitchRow>,
         #[template_child]
+        pub(crate) general_optimize_epd_row: TemplateChild<adw::SwitchRow>,
+        #[template_child]
         pub(crate) general_inertial_scrolling_row: TemplateChild<adw::SwitchRow>,
         #[template_child]
         pub(crate) general_regular_cursor_picker: TemplateChild<RnIconPicker>,
@@ -367,9 +369,12 @@ impl RnSettingsPanel {
         let canvas = active_tab.canvas();
 
         let format_border_color = canvas.engine_ref().document.format.border_color;
+        let optimize_epd = canvas.engine_ref().optimize_epd();
 
         imp.doc_format_border_color_button
             .set_rgba(&gdk::RGBA::from_compose_color(format_border_color));
+
+        imp.general_optimize_epd_row.set_active(optimize_epd);
     }
 
     fn refresh_format_ui(&self, active_tab: &RnCanvasWrapper) {
@@ -505,6 +510,21 @@ impl RnSettingsPanel {
             }),
         );
 
+        imp.general_optimize_epd_row
+            .bind_property(
+                "active",
+                &appwindow.overlays().colorpicker().active_color_label(),
+                "visible",
+            )
+            .sync_create()
+            .build();
+
+        imp.general_optimize_epd_row.connect_active_notify(
+            clone!(@weak appwindow => move |row| {
+                appwindow.active_tab_wrapper().canvas().engine_mut().set_optimize_epd(row.is_active());
+            }),
+        );
+
         // Regular cursor picker
         imp.general_regular_cursor_picker.set_list(
             StringList::new(CURSORS_LIST),
@@ -552,7 +572,7 @@ impl RnSettingsPanel {
                 if !row.is_active() {
                     appwindow.overlays().dispatch_toast_text_singleton(
                         &gettext("Application restart is required"),
-                        0,
+                        None,
                         &mut settingspanel.imp().app_restart_toast_singleton.borrow_mut()
                     );
                 }

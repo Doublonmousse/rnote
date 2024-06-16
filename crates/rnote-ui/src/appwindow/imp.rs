@@ -1,4 +1,5 @@
 // Imports
+use crate::overlays::TEXT_TOAST_TIMEOUT_DEFAULT;
 use crate::{config, dialogs, RnMainHeader, RnOverlays, RnSidebar};
 use adw::{prelude::*, subclass::prelude::*};
 use gettextrs::gettext;
@@ -21,6 +22,7 @@ pub(crate) struct RnAppWindow {
     pub(crate) autosave_interval_secs: Cell<u32>,
     pub(crate) righthanded: Cell<bool>,
     pub(crate) block_pinch_zoom: Cell<bool>,
+    pub(crate) respect_borders: Cell<bool>,
     pub(crate) touch_drawing: Cell<bool>,
     pub(crate) focus_mode: Cell<bool>,
 
@@ -47,6 +49,7 @@ impl Default for RnAppWindow {
             autosave_interval_secs: Cell::new(super::RnAppWindow::AUTOSAVE_INTERVAL_DEFAULT),
             righthanded: Cell::new(true),
             block_pinch_zoom: Cell::new(false),
+            respect_borders: Cell::new(false),
             touch_drawing: Cell::new(false),
             focus_mode: Cell::new(false),
 
@@ -127,6 +130,9 @@ impl ObjectImpl for RnAppWindow {
                 glib::ParamSpecBoolean::builder("touch-drawing")
                     .default_value(false)
                     .build(),
+                glib::ParamSpecBoolean::builder("respect-borders")
+                    .default_value(false)
+                    .build(),
                 glib::ParamSpecBoolean::builder("focus-mode")
                     .default_value(false)
                     .build(),
@@ -141,6 +147,7 @@ impl ObjectImpl for RnAppWindow {
             "autosave-interval-secs" => self.autosave_interval_secs.get().to_value(),
             "righthanded" => self.righthanded.get().to_value(),
             "block-pinch-zoom" => self.block_pinch_zoom.get().to_value(),
+            "respect-borders" => self.respect_borders.get().to_value(),
             "touch-drawing" => self.touch_drawing.get().to_value(),
             "focus-mode" => self.focus_mode.get().to_value(),
             _ => unimplemented!(),
@@ -188,6 +195,11 @@ impl ObjectImpl for RnAppWindow {
                     value.get().expect("The value needs to be of type `bool`");
                 self.block_pinch_zoom.replace(block_pinch_zoom);
             }
+            "respect-borders" => {
+                let respect_borders: bool =
+                    value.get().expect("The value needs to be of type `bool`");
+                self.respect_borders.replace(respect_borders);
+            }
             "touch-drawing" => {
                 let touch_drawing: bool =
                     value.get().expect("The value needs to be of type `bool`");
@@ -209,17 +221,23 @@ impl ObjectImpl for RnAppWindow {
 impl WidgetImpl for RnAppWindow {}
 
 impl WindowImpl for RnAppWindow {
-    // Save window state right before the window will be closed
     fn close_request(&self) -> glib::Propagation {
         let obj = self.obj().to_owned();
 
-        // Save current doc
-        if obj.tabs_any_unsaved_changes() {
-            glib::spawn_future_local(clone!(@weak obj as appwindow => async move {
-                dialogs::dialog_close_window(&obj).await;
-            }));
+        if obj.tabs_any_saves_in_progress() {
+            obj.overlays().dispatch_toast_text(
+                &gettext("Saves are in progress"),
+                TEXT_TOAST_TIMEOUT_DEFAULT,
+            );
         } else {
-            obj.close_force();
+            // Save current doc
+            if obj.tabs_any_unsaved_changes() {
+                glib::spawn_future_local(clone!(@weak obj as appwindow => async move {
+                    dialogs::dialog_close_window(&obj).await;
+                }));
+            } else {
+                obj.close_force();
+            }
         }
 
         // Inhibit (Overwrite) the default handler. This handler is then responsible for destroying the window.

@@ -84,6 +84,11 @@ impl RnAppWindow {
         self.set_property("focus-mode", focus_mode.to_value());
     }
 
+    #[allow(unused)]
+    pub(crate) fn respect_borders(&self) -> bool {
+        self.property::<bool>("respect-borders")
+    }
+
     pub(crate) fn app(&self) -> RnApp {
         self.application().unwrap().downcast::<RnApp>().unwrap()
     }
@@ -127,13 +132,13 @@ impl RnAppWindow {
             ));
         } else {
             if let Err(e) = self.setup_settings_binds() {
-                tracing::error!("Failed to setup settings binds, Err: {e:}");
+                tracing::error!("Failed to setup settings binds, Err: {e:?}");
             }
             if let Err(e) = self.setup_periodic_save() {
-                tracing::error!("Failed to setup periodic save, Err: {e:}");
+                tracing::error!("Failed to setup periodic save, Err: {e:?}");
             }
             if let Err(e) = self.load_settings() {
-                tracing::error!("Failed to load initial settings, Err: {e:}");
+                tracing::error!("Failed to load initial settings, Err: {e:?}");
             }
         }
 
@@ -361,6 +366,23 @@ impl RnAppWindow {
             .any(|c| c.unsaved_changes())
     }
 
+    pub(crate) fn tabs_any_saves_in_progress(&self) -> bool {
+        self.overlays()
+            .tabview()
+            .pages()
+            .snapshot()
+            .iter()
+            .map(|o| {
+                o.downcast_ref::<adw::TabPage>()
+                    .unwrap()
+                    .child()
+                    .downcast_ref::<RnCanvasWrapper>()
+                    .unwrap()
+                    .canvas()
+            })
+            .any(|c| c.save_in_progress())
+    }
+
     pub(crate) fn tabs_query_file_opened(
         &self,
         input_file_path: impl AsRef<Path>,
@@ -541,7 +563,7 @@ impl RnAppWindow {
                 let canvas = self.active_tab_wrapper().canvas();
                 let (bytes, _) = input_file.load_bytes_future().await?;
                 canvas
-                    .load_in_vectorimage_bytes(bytes.to_vec(), target_pos)
+                    .load_in_vectorimage_bytes(bytes.to_vec(), target_pos, self.respect_borders())
                     .await?;
                 true
             }
@@ -549,7 +571,7 @@ impl RnAppWindow {
                 let canvas = self.active_tab_wrapper().canvas();
                 let (bytes, _) = input_file.load_bytes_future().await?;
                 canvas
-                    .load_in_bitmapimage_bytes(bytes.to_vec(), target_pos)
+                    .load_in_bitmapimage_bytes(bytes.to_vec(), target_pos, self.respect_borders())
                     .await?;
                 true
             }

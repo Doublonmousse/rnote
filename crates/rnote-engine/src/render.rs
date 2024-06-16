@@ -1,6 +1,7 @@
 // Imports
 use crate::Drawable;
 use anyhow::Context;
+use core::fmt::Debug;
 use image::io::Reader;
 use once_cell::sync::Lazy;
 use p2d::bounding_volume::{Aabb, BoundingVolume};
@@ -10,13 +11,14 @@ use rnote_compose::shapes::{Rectangle, Shapeable};
 use rnote_compose::transform::Transformable;
 use serde::{Deserialize, Serialize};
 use std::io::{self, Cursor};
+use std::sync::Arc;
 use svg::Node;
 
 /// Usvg font database
-pub static USVG_FONTDB: Lazy<usvg::fontdb::Database> = Lazy::new(|| {
+pub static USVG_FONTDB: Lazy<Arc<usvg::fontdb::Database>> = Lazy::new(|| {
     let mut db = usvg::fontdb::Database::new();
     db.load_system_fonts();
-    db
+    Arc::new(db)
 });
 
 /// Px unit (96 DPI ) to Point unit ( 72 DPI ) conversion factor.
@@ -76,7 +78,7 @@ impl From<ImageMemoryFormat> for piet::ImageFormat {
 }
 
 /// A bitmap image.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 #[serde(default, rename = "image")]
 pub struct Image {
     /// The image data.
@@ -96,6 +98,18 @@ pub struct Image {
     /// Memory format.
     #[serde(rename = "memory_format")]
     pub memory_format: ImageMemoryFormat,
+}
+
+impl Debug for Image {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Image")
+            .field("data", &String::from("- no debug impl -"))
+            .field("rect", &self.rect)
+            .field("pixel_width", &self.pixel_width)
+            .field("pixel_height", &self.pixel_height)
+            .field("memory_format", &self.memory_format)
+            .finish()
+    }
 }
 
 impl Default for Image {
@@ -231,19 +245,37 @@ impl Image {
         }
     }
 
+    /// Encodes the image into the provided format.
+    ///
+    /// When the format is `Jpeg`, the quality should be provided, but falls back to 93 if it is None.
     pub fn into_encoded_bytes(
         self,
-        format: image::ImageOutputFormat,
+        format: image::ImageFormat,
+        quality: Option<u8>,
     ) -> Result<Vec<u8>, anyhow::Error> {
+        const QUALITY_FALLBACK: u8 = 93;
+
         self.assert_valid()?;
         let mut bytes_buf: Cursor<Vec<u8>> = Cursor::new(Vec::new());
         let dynamic_image = image::DynamicImage::ImageRgba8(
             self.into_imgbuf()
                 .context("Converting image to image::ImageBuffer failed.")?,
         );
-        dynamic_image
-            .write_to(&mut bytes_buf, format)
-            .context("Writing dynamic image to bytes buffer failed.")?;
+        match format {
+            image::ImageFormat::Jpeg => {
+                image::codecs::jpeg::JpegEncoder::new_with_quality(
+                    &mut bytes_buf,
+                    quality.map(|q| q.clamp(0, 100)).unwrap_or(QUALITY_FALLBACK),
+                )
+                .encode_image(&dynamic_image)
+                .context("Encode dynamic image to jpeg failed.")?;
+            }
+            format => {
+                dynamic_image
+                    .write_to(&mut bytes_buf, format)
+                    .context("Encode dynamic image to format '{format}' failed.")?;
+            }
+        }
 
         Ok(bytes_buf.into_inner())
     }
@@ -436,8 +468,13 @@ impl Svg {
             false,
         );
 
-        let usvg_tree =
-            usvg::Tree::from_str(&svg_data_wrapped, &usvg::Options::default(), &USVG_FONTDB)?;
+        let usvg_tree = usvg::Tree::from_str(
+            &svg_data_wrapped,
+            &usvg::Options {
+                fontdb: Arc::clone(&USVG_FONTDB),
+                ..Default::default()
+            },
+        )?;
 
         self.svg_data = usvg_tree.to_string(&xml_options);
         self.bounds = bounds_simplified;
