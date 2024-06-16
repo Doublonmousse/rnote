@@ -1,23 +1,27 @@
 // Imports
+use glib::clone;
+use glib::subclass::Signal;
+use gtk4::graphene::Rect;
+use gtk4::Orientation;
+use gtk4::SizeRequestMode;
 use gtk4::{
-    gdk, gdk::RGBA, glib, prelude::*, subclass::prelude::*, Align, Button, CssProvider,
-    PositionType, ToggleButton, Widget,
+    gdk, gdk::RGBA, glib, prelude::*, subclass::prelude::*, Align, Button, PositionType,
+    ToggleButton, Widget,
 };
 use once_cell::sync::Lazy;
-use rnote_compose::{color, Color};
+use rnote_compose::Color;
 use rnote_engine::ext::GdkRGBAExt;
 use std::cell::Cell;
+use std::sync::OnceLock;
 
 mod imp {
     use super::*;
 
-    #[derive(Properties, Debug)]
-    #[properties(wrapper_type = RnColorSetter)]
+    #[derive(Debug)]
     pub(crate) struct RnColorSetter {
         pub(crate) color: Cell<gdk::RGBA>,
         pub(crate) position: Cell<PositionType>,
-        #[property(get, set)]
-        active_button: Cell<bool>,
+        pub(crate) active: Cell<bool>,
     }
 
     #[glib::object_subclass]
@@ -39,7 +43,7 @@ mod imp {
                     super::RnColorSetter::COLOR_DEFAULT,
                 )),
                 position: Cell::new(PositionType::Right),
-                active_button: false,
+                active: Cell::new(false),
             }
         }
     }
@@ -75,28 +79,29 @@ mod imp {
             obj.add_css_class("flat");
             obj.set_width_request(34);
             obj.set_height_request(34);
-            obj.set_active_button(false);
+            // name collision ? need to use active_button on all properties ??
+            //obj.set_active(false);
 
             // connect a gesture for all interactions
             // Connect a gesture to handle clicks.
-            let gesture = gtk::GestureClick::new();
+            let gesture = gtk4::GestureClick::new();
             gesture.connect_pressed(clone!(@weak obj=> move |_gesture, _, _, _| {
                 let val: i32 = 0;
                 println!("left click inside closure");
 
-                obj.set_active_button(!obj.active_button());
+                //obj.set_active(!obj);
 
                 obj.emit_by_name::<()>("left-click", &[&val])
             }));
 
-            let long_click = gtk::GestureLongPress::new();
+            let long_click = gtk4::GestureLongPress::new();
             long_click.connect_pressed(clone!(@weak obj => move |ev, x, y| {
                 println!("inside closure : pressed {:?} {:?} {:?}", ev, x, y);
 
                 let val: i32 = 0;
                 obj.emit_by_name::<()>("long-click", &[&val]);
             }));
-            let rightclick_gesture = gtk::GestureClick::builder()
+            let rightclick_gesture = gtk4::GestureClick::builder()
                 .name("rightclick_gesture")
                 .button(gdk::BUTTON_SECONDARY)
                 .build();
@@ -120,7 +125,7 @@ mod imp {
                         PositionType::Right,
                     )
                     .build(),
-                    // maybe not possible to have properties in two places like this ?
+                    glib::ParamSpecBoolean::builder("active").build(),
                 ]
             });
             PROPERTIES.as_ref()
@@ -133,8 +138,6 @@ mod imp {
                         .get::<gdk::RGBA>()
                         .expect("value not of type `gdk::RGBA`");
                     self.color.set(color);
-
-                    self.update_appearance(color.into_compose_color());
                 }
                 "position" => {
                     let position = value
@@ -142,6 +145,11 @@ mod imp {
                         .expect("value not of type `PositionType`");
 
                     self.position.replace(position);
+                }
+                "active" => {
+                    let active = value.get::<bool>().expect("value not of type bool");
+
+                    self.active.replace(active);
                 }
                 _ => panic!("invalid property name"),
             }
@@ -151,6 +159,7 @@ mod imp {
             match pspec.name() {
                 "color" => self.color.get().to_value(),
                 "position" => self.position.get().to_value(),
+                "active" => self.active.get().to_value(),
                 _ => panic!("invalid property name"),
             }
         }
@@ -169,7 +178,7 @@ mod imp {
             }
         }
 
-        fn snapshot(&self, snapshot: &gtk::Snapshot) {
+        fn snapshot(&self, snapshot: &gtk4::Snapshot) {
             let obj = self.obj();
             let size = (obj.width() as f32, obj.height() as f32);
 
@@ -181,15 +190,18 @@ mod imp {
 
             snapshot.append_color(&color, &Rect::new(0.0, 0.0, size.0, size.1));
             // and a bar on the bottom that signifies the button is activated
-            let colorsetter_fg_color = if color.a == 0.0 {
+            let colorsetter_fg_color = if color.alpha() == 0.0 {
                 RGBA::new(0.0, 0.0, 0.0, 1.0)
-            } else if color.luma() < color::FG_LUMINANCE_THRESHOLD {
-                RGBA::new(1.0, 1.0, 1.0, 1.0)
-            } else {
+            }
+            //else if  < color::FG_LUMINANCE_THRESHOLD {
+            //RGBA::new(1.0, 1.0, 1.0, 1.0)
+            //}
+            // todo : find the corresponding methods and convert if needed
+            else {
                 RGBA::new(0.0, 0.0, 0.0, 1.0)
             };
 
-            if self.active_button.get() {
+            if self.active.get() {
                 snapshot.append_color(
                     &colorsetter_fg_color,
                     &Rect::new(0.0, 0.9 * size.1, size.0, 0.2 * size.1),
