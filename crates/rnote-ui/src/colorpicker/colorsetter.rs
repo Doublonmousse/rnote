@@ -1,7 +1,7 @@
 // Imports
 use gtk4::{
-    gdk, glib, prelude::*, subclass::prelude::*, Align, Button, CssProvider, PositionType,
-    ToggleButton, Widget,
+    gdk, gdk::RGBA, glib, prelude::*, subclass::prelude::*, Align, Button, CssProvider,
+    PositionType, ToggleButton, Widget,
 };
 use once_cell::sync::Lazy;
 use rnote_compose::{color, Color};
@@ -11,17 +11,25 @@ use std::cell::Cell;
 mod imp {
     use super::*;
 
-    #[derive(Debug)]
+    #[derive(Properties, Debug)]
+    #[properties(wrapper_type = RnColorSetter)]
     pub(crate) struct RnColorSetter {
         pub(crate) color: Cell<gdk::RGBA>,
         pub(crate) position: Cell<PositionType>,
+        #[property(get, set)]
+        active_button: Cell<bool>,
     }
 
     #[glib::object_subclass]
     impl ObjectSubclass for RnColorSetter {
         const NAME: &'static str = "RnColorSetter";
         type Type = super::RnColorSetter;
-        type ParentType = ToggleButton;
+        type ParentType = Widget;
+
+        fn class_init(klass: &mut Self::Class) {
+            // Make it look like a GTK button.
+            klass.set_css_name("button");
+        }
     }
 
     impl Default for RnColorSetter {
@@ -31,11 +39,31 @@ mod imp {
                     super::RnColorSetter::COLOR_DEFAULT,
                 )),
                 position: Cell::new(PositionType::Right),
+                active_button: false,
             }
         }
     }
 
+    #[glib::derived_properties]
     impl ObjectImpl for RnColorSetter {
+        // to check whether this has to be used or not
+        fn signals() -> &'static [Signal] {
+            static SIGNALS: OnceLock<Vec<Signal>> = OnceLock::new();
+            SIGNALS.get_or_init(|| {
+                vec![
+                    Signal::builder("right-click")
+                        .param_types([i32::static_type()])
+                        .build(),
+                    Signal::builder("left-click")
+                        .param_types([i32::static_type()])
+                        .build(),
+                    Signal::builder("long-click")
+                        .param_types([i32::static_type()])
+                        .build(),
+                ]
+            })
+        }
+
         fn constructed(&self) {
             let obj = self.obj();
             self.parent_constructed();
@@ -44,11 +72,43 @@ mod imp {
             obj.set_vexpand(false);
             obj.set_halign(Align::Fill);
             obj.set_valign(Align::Fill);
+            obj.add_css_class("flat");
             obj.set_width_request(34);
             obj.set_height_request(34);
-            obj.set_css_classes(&["colorsetter"]);
+            obj.set_active_button(false);
 
-            self.update_appearance(super::RnColorSetter::COLOR_DEFAULT);
+            // connect a gesture for all interactions
+            // Connect a gesture to handle clicks.
+            let gesture = gtk::GestureClick::new();
+            gesture.connect_pressed(clone!(@weak obj=> move |_gesture, _, _, _| {
+                let val: i32 = 0;
+                println!("left click inside closure");
+
+                obj.set_active_button(!obj.active_button());
+
+                obj.emit_by_name::<()>("left-click", &[&val])
+            }));
+
+            let long_click = gtk::GestureLongPress::new();
+            long_click.connect_pressed(clone!(@weak obj => move |ev, x, y| {
+                println!("inside closure : pressed {:?} {:?} {:?}", ev, x, y);
+
+                let val: i32 = 0;
+                obj.emit_by_name::<()>("long-click", &[&val]);
+            }));
+            let rightclick_gesture = gtk::GestureClick::builder()
+                .name("rightclick_gesture")
+                .button(gdk::BUTTON_SECONDARY)
+                .build();
+            rightclick_gesture.connect_pressed(clone!(@weak obj => move |_, _, _, _| {
+                println!("inside closure : right click");
+
+                let val: i32 = 0;
+                obj.emit_by_name::<()>("right-click", &[&val]);
+            }));
+            obj.add_controller(rightclick_gesture);
+            obj.add_controller(long_click);
+            obj.add_controller(gesture);
         }
 
         fn properties() -> &'static [glib::ParamSpec] {
@@ -60,6 +120,7 @@ mod imp {
                         PositionType::Right,
                     )
                     .build(),
+                    // maybe not possible to have properties in two places like this ?
                 ]
             });
             PROPERTIES.as_ref()
@@ -95,41 +156,51 @@ mod imp {
         }
     }
 
-    impl WidgetImpl for RnColorSetter {}
+    impl WidgetImpl for RnColorSetter {
+        fn request_mode(&self) -> SizeRequestMode {
+            SizeRequestMode::ConstantSize
+        }
+
+        fn measure(&self, orientation: Orientation, _for_size: i32) -> (i32, i32, i32, i32) {
+            match orientation {
+                Orientation::Horizontal => (0, 32, -1, -1),
+                Orientation::Vertical => (0, 32, -1, -1),
+                _ => unimplemented!(),
+            }
+        }
+
+        fn snapshot(&self, snapshot: &gtk::Snapshot) {
+            let obj = self.obj();
+            let size = (obj.width() as f32, obj.height() as f32);
+
+            // in the background, add the transparency checkboard
+
+            //then the color
+            // parse the color
+            let color: gdk::RGBA = self.color.get();
+
+            snapshot.append_color(&color, &Rect::new(0.0, 0.0, size.0, size.1));
+            // and a bar on the bottom that signifies the button is activated
+            let colorsetter_fg_color = if color.a == 0.0 {
+                RGBA::new(0.0, 0.0, 0.0, 1.0)
+            } else if color.luma() < color::FG_LUMINANCE_THRESHOLD {
+                RGBA::new(1.0, 1.0, 1.0, 1.0)
+            } else {
+                RGBA::new(0.0, 0.0, 0.0, 1.0)
+            };
+
+            if self.active_button.get() {
+                snapshot.append_color(
+                    &colorsetter_fg_color,
+                    &Rect::new(0.0, 0.9 * size.1, size.0, 0.2 * size.1),
+                );
+            }
+        }
+    }
 
     impl ButtonImpl for RnColorSetter {}
 
     impl ToggleButtonImpl for RnColorSetter {}
-
-    impl RnColorSetter {
-        fn update_appearance(&self, color: Color) {
-            let css = CssProvider::new();
-
-            let colorsetter_color = color.to_css_color_attr();
-            let colorsetter_fg_color = if color.a == 0.0 {
-                String::from("@window_fg_color")
-            } else if color.luma() < color::FG_LUMINANCE_THRESHOLD {
-                String::from("@light_1")
-            } else {
-                String::from("@dark_5")
-            };
-
-            let custom_css = format!(
-                "@define-color colorsetter_color {colorsetter_color}; @define-color colorsetter_fg_color {colorsetter_fg_color};",
-            );
-            css.load_from_string(&custom_css);
-
-            // adding custom css is deprecated.
-            // TODO: We should refactor to drawing through snapshot().
-            // Doing this will also get rid of the css checkerboard glitches that appear on some devices and scaling levels.
-            #[allow(deprecated)]
-            self.obj()
-                .style_context()
-                .add_provider(&css, gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION);
-
-            self.obj().queue_draw();
-        }
-    }
 }
 
 glib::wrapper! {
