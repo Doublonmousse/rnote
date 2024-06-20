@@ -154,7 +154,7 @@ impl ObjectImpl for RnAppWindow {
                     .default_value(false)
                     .build(),
                 glib::ParamSpecBoolean::builder("lock-eraser")
-                    .default_value(false)
+                    .default_value(true)
                     .build(),
             ]
         });
