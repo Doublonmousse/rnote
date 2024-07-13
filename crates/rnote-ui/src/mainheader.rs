@@ -29,7 +29,6 @@ mod imp {
         pub(crate) quickactions_box: TemplateChild<Box>,
         #[template_child]
         pub(crate) right_buttons_box: TemplateChild<Box>,
-
     }
 
     #[glib::object_subclass]
