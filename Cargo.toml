@@ -54,6 +54,7 @@ numeric-sort = "0.1.1"
 once_cell = "1.19"
 parry2d-f64 = { version = "0.15.1", features = ["serde-serialize"] }
 opener = {version = "0.7.0", features=["reveal"]}
+palette = "0.7.6"
 path-absolutize = "3.1"
 piet = "0.6.2"
 piet-cairo = "0.6.2"
