@@ -586,7 +586,7 @@ pub(crate) async fn dialog_export_doc_pages_w_prefs(appwindow: &RnAppWindow, can
                                 return;
                             };
 
-                            if let Err(e) = opener:open(&folder_path_string) {
+                            if let Err(e) = opener::open(&folder_path_string) {
                                 tracing::error!("Opening the parent folder '{folder_path_string}' in the file manager failed, Err: {e:?}");
                                 appwindow.overlays().dispatch_toast_error(&gettext("Failed to open the file in the file manager"));
                             }
