@@ -734,6 +734,22 @@ mod imp {
                             canvaswrapper
                                 .canvas()
                                 .emit_handle_widget_flags(widget_flags);
+                            canvaswrapper
+                                .imp()
+                                .touch_long_press_gesture
+                                .set_propagation_phase(PropagationPhase::None);
+                        }
+                    ));
+
+                self.touch_two_finger_long_press_gesture
+                    .connect_cancel(clone!(
+                        #[weak(rename_to=canvaswrapper)]
+                        obj,
+                        move |_gesture, _seq| {
+                            canvaswrapper
+                                .imp()
+                                .touch_long_press_gesture
+                                .set_propagation_phase(PropagationPhase::Capture);
                         }
                     ));
             }
