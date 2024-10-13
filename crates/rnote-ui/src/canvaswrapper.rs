@@ -752,6 +752,17 @@ mod imp {
                                 .set_propagation_phase(PropagationPhase::Capture);
                         }
                     ));
+
+                self.touch_two_finger_long_press_gesture.connect_end(clone!(
+                    #[weak(rename_to=canvaswrapper)]
+                    obj,
+                    move |_gesture, _seq| {
+                        canvaswrapper
+                            .imp()
+                            .touch_long_press_gesture
+                            .set_propagation_phase(PropagationPhase::Capture);
+                    }
+                ));
             }
 
             {
