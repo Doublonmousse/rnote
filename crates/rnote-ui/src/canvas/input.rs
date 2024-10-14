@@ -27,8 +27,17 @@ pub(crate) fn handle_pointer_controller_event(
     let backlog_policy = canvas.engine_ref().penholder.backlog_policy();
     let is_stylus = event_is_stylus(event);
 
-    //std::thread::sleep(std::time::Duration::from_millis(100));
-    //super::input::debug_gdk_event(event);
+    tracing::debug!(
+        "Gdk event : {:?}\n Device : {:?}\n Device tool : {:?}\n Axis: {:?}\n Axis values: {:?}",
+        event,
+        event.device(),
+        event.device_tool(),
+        match event.device_tool() {
+            Some(dt) => dt.axes(),
+            None => gdk::AxisFlags::empty(),
+        },
+        event.axes()
+    );
 
     if reject_pointer_input(event, touch_drawing) {
         return (glib::Propagation::Proceed, pen_state);
