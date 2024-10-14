@@ -1,7 +1,6 @@
 name: Nightly
 
 on:
-  schedule:
   workflow_dispatch:
   workflow_call:
 
