@@ -13,6 +13,7 @@ use rnote_engine::Camera;
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::time::Instant;
+use tracing::debug;
 
 #[derive(Debug, Default)]
 struct Connections {
@@ -601,13 +602,16 @@ mod imp {
                     #[weak(rename_to=canvaswrapper)]
                     obj,
                     move |gesture, _, _| {
+                        debug!("drag begin");
                         let modifiers = gesture.current_event_state();
 
                         // At the start BUTTON1_MASK is not included
                         if modifiers == gdk::ModifierType::ALT_MASK {
+                            debug!("drag begin, claimed");
                             gesture.set_state(EventSequenceState::Claimed);
                             offset_start.set(canvaswrapper.canvas().engine_ref().camera.offset());
                         } else {
+                            debug!("drag begin, denied");
                             gesture.set_state(EventSequenceState::Denied);
                         }
                     }
@@ -619,6 +623,7 @@ mod imp {
                     #[weak(rename_to=canvaswrapper)]
                     obj,
                     move |_, offset_x, offset_y| {
+                        debug!("connect drag update");
                         let canvas = canvaswrapper.canvas();
                         let new_offset = offset_start.get() - na::vector![offset_x, offset_y];
                         let widget_flags = canvas.engine_mut().camera_set_offset_expand(new_offset);
@@ -630,6 +635,7 @@ mod imp {
                     #[weak(rename_to=canvaswrapper)]
                     obj,
                     move |_, _, _| {
+                        debug!("connect drag end");
                         let widget_flags = canvaswrapper
                             .canvas()
                             .engine_mut()
@@ -637,6 +643,36 @@ mod imp {
                         canvaswrapper
                             .canvas()
                             .emit_handle_widget_flags(widget_flags);
+                    }
+                ));
+
+                self.canvas_alt_drag_gesture.connect_begin(clone!(
+                    move |_, seq| {
+                        debug!("begin signal, {:?}", seq);
+                    }
+                ));
+
+                self.canvas_alt_drag_gesture.connect_cancel(clone!(
+                    move |_, seq| {
+                        debug!("cancel signal, {:?}", seq);
+                    }
+                ));
+
+                self.canvas_alt_drag_gesture.connect_end(clone!(
+                    move |_, seq| {
+                        debug!("end signal, {:?}", seq);
+                    }
+                ));
+
+                self.canvas_alt_drag_gesture.connect_sequence_state_changed(clone!(
+                    move |_, seq,state| {
+                        debug!("sequence state changed signal, {:?} {:?}", seq, state);
+                    }
+                ));
+
+                self.canvas_alt_drag_gesture.connect_update(clone!(
+                    move |_, seq| {
+                        debug!("update signal, {:?}", seq);
                     }
                 ));
             }
