@@ -221,7 +221,10 @@ impl RnAppWindow {
             }
         }
         if widget_flags.store_modified {
-            canvas.set_unsaved_changes(true);
+            canvas.set_unsaved_changes(
+                true,
+                String::from(format!("handle_widget_flags : {:?}", widget_flags)),
+            );
             canvas.set_empty(false);
         }
         if widget_flags.view_modified {
@@ -336,10 +339,11 @@ impl RnAppWindow {
             .map(|w| w.canvas().engine_ref().extract_engine_config())
             .unwrap_or_default();
         let wrapper = RnCanvasWrapper::new();
-        let widget_flags = wrapper
+        let mut widget_flags = wrapper
             .canvas()
             .engine_mut()
             .load_engine_config(engine_config, crate::env::pkg_data_dir().ok());
+        widget_flags.origin = String::from("new_canvas_wrapper");
         self.handle_widget_flags(widget_flags, &wrapper.canvas());
         wrapper
     }
@@ -562,13 +566,14 @@ impl RnAppWindow {
                         };
 
                     let (bytes, _) = input_file.load_bytes_future().await?;
-                    let widget_flags = wrapper
+                    let mut widget_flags = wrapper
                         .canvas()
                         .load_in_rnote_bytes(bytes.to_vec(), input_file.path())
                         .await?;
                     if rnote_file_new_tab {
                         self.append_wrapper_new_tab(&wrapper);
                     }
+                    widget_flags.origin = String::from("try_open_file");
                     self.handle_widget_flags(widget_flags, &wrapper.canvas());
                     true
                 }
@@ -914,6 +919,7 @@ impl RnAppWindow {
             .engine_mut()
             .set_visual_debug(prev_canvas.engine_mut().visual_debug());
 
+        widget_flags.origin = String::from("sync_state_between_tabs");
         self.handle_widget_flags(widget_flags, &active_canvas);
     }
 }

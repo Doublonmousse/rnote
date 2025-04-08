@@ -361,7 +361,7 @@ mod imp {
                     let empty: bool = value.get().expect("The value needs to be of type `bool`");
                     self.empty.replace(empty);
                     if empty {
-                        obj.set_unsaved_changes(false);
+                        obj.set_unsaved_changes(false, String::from(""));
                     }
                 }
                 "hadjustment" => {
@@ -724,7 +724,11 @@ impl RnCanvas {
     }
 
     #[allow(unused)]
-    pub(crate) fn set_unsaved_changes(&self, unsaved_changes: bool) {
+    pub(crate) fn set_unsaved_changes(&self, unsaved_changes: bool, reason: String) {
+        // maybe we can catch why we get unsaved changes here
+        if unsaved_changes {
+            println!("setting unsaved indicator to true from {:?}", reason);
+        }
         if self.imp().unsaved_changes.get() != unsaved_changes {
             self.set_property("unsaved-changes", unsaved_changes.to_value());
         }
@@ -958,7 +962,7 @@ impl RnCanvas {
 
     pub(crate) fn create_output_file_watcher(&self, file: &gio::File, appwindow: &RnAppWindow) {
         let dispatch_toast_reload_modified_file = |appwindow: &RnAppWindow, canvas: &RnCanvas| {
-            canvas.set_unsaved_changes(true);
+            canvas.set_unsaved_changes(true, String::from("create_output_file_watcher start"));
 
             appwindow.overlays().dispatch_toast_w_button_singleton(
                 &gettext("Opened file was modified on disk"),
@@ -1043,7 +1047,12 @@ impl RnCanvas {
                     if !crate::utils::paths_abs_eq(file_path, event_path).unwrap_or(false) {
                         return;
                     }
-                    canvas.set_unsaved_changes(true);
+                    canvas.set_unsaved_changes(
+                        true,
+                        String::from(
+                            "create_output_file_watcher, EventKind::Modify(ModifyKind::Name(_)) ",
+                        ),
+                    );
                     canvas.set_output_file(None);
                     appwindow.overlays().dispatch_toast_text(
                         &gettext("Opened file was renamed or moved."),
@@ -1057,7 +1066,10 @@ impl RnCanvas {
                     if !crate::utils::paths_abs_eq(file_path, event_path).unwrap_or(false) {
                         return;
                     }
-                    canvas.set_unsaved_changes(true);
+                    canvas.set_unsaved_changes(
+                        true,
+                        String::from("create_output_file_watcher EventKind::Remove(_remove_kind)"),
+                    );
                     canvas.set_output_file(None);
                     appwindow.overlays().dispatch_toast_text(
                         &gettext("Opened file was removed."),
@@ -1315,8 +1327,10 @@ impl RnCanvas {
                 None,
                 move |args| {
                     // first argument is the widget, second is widget flags
-                    let widget_flags = args[1].get::<WidgetFlagsBoxed>().unwrap().inner();
+                    let mut widget_flags = args[1].get::<WidgetFlagsBoxed>().unwrap().inner();
 
+                    // if this comes from this, we need to look at calls to emit_handle_widget_flags (34 results !)
+                    widget_flags.origin = String::from("appwindow_handle_widget_flags");
                     appwindow.handle_widget_flags(widget_flags, &canvas);
                     None
                 }

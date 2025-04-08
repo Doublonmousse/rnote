@@ -296,7 +296,8 @@ impl RnAppWindow {
                     return;
                 };
                 let visual_debug = state_request.unwrap().get::<bool>().unwrap();
-                let widget_flags = canvas.engine_mut().set_visual_debug(visual_debug);
+                let mut widget_flags = canvas.engine_mut().set_visual_debug(visual_debug);
+                widget_flags.origin = String::from("action visual debug");
                 appwindow.handle_widget_flags(widget_flags, &canvas);
                 action.set_state(&visual_debug.to_variant());
             }
@@ -431,6 +432,7 @@ impl RnAppWindow {
                 if pen_style != canvas.engine_ref().penholder.current_pen_style_w_override() {
                     let mut widget_flags = canvas.engine_mut().change_pen_style(pen_style);
                     widget_flags |= canvas.engine_mut().change_pen_style_override(None);
+                    widget_flags.origin = String::from("action_pen_style");
                     appwindow.handle_widget_flags(widget_flags, &canvas);
                 }
 
@@ -490,9 +492,10 @@ impl RnAppWindow {
                 let Some(canvas) = appwindow.active_tab_canvas() else {
                     return;
                 };
-                let (_, widget_flags) = canvas
+                let (_, mut widget_flags) = canvas
                     .engine_mut()
                     .handle_pressed_shortcut_key(ShortcutKey::DrawingPadButton0, Instant::now());
+                widget_flags.origin = String::from("action_drawing_pad_pressed_button_0");
                 appwindow.handle_widget_flags(widget_flags, &canvas);
             }
         ));
@@ -505,9 +508,10 @@ impl RnAppWindow {
                 let Some(canvas) = appwindow.active_tab_canvas() else {
                     return;
                 };
-                let (_, widget_flags) = canvas
+                let (_, mut widget_flags) = canvas
                     .engine_mut()
                     .handle_pressed_shortcut_key(ShortcutKey::DrawingPadButton1, Instant::now());
+                widget_flags.origin = String::from("action_drawing_pad_pressed_button_1");
                 appwindow.handle_widget_flags(widget_flags, &canvas);
             }
         ));
@@ -520,9 +524,10 @@ impl RnAppWindow {
                 let Some(canvas) = appwindow.active_tab_canvas() else {
                     return;
                 };
-                let (_, widget_flags) = canvas
+                let (_, mut widget_flags) = canvas
                     .engine_mut()
                     .handle_pressed_shortcut_key(ShortcutKey::DrawingPadButton2, Instant::now());
+                widget_flags.origin = String::from("action_drawing_pad_pressed_button_2");
                 appwindow.handle_widget_flags(widget_flags, &canvas);
             }
         ));
@@ -535,9 +540,10 @@ impl RnAppWindow {
                 let Some(canvas) = appwindow.active_tab_canvas() else {
                     return;
                 };
-                let (_, widget_flags) = canvas
+                let (_, mut widget_flags) = canvas
                     .engine_mut()
                     .handle_pressed_shortcut_key(ShortcutKey::DrawingPadButton3, Instant::now());
+                widget_flags.origin = String::from("action_drawing_pad_pressed_button_3");
                 appwindow.handle_widget_flags(widget_flags, &canvas);
             }
         ));
@@ -550,7 +556,8 @@ impl RnAppWindow {
                 let Some(canvas) = appwindow.active_tab_canvas() else {
                     return;
                 };
-                let widget_flags = canvas.engine_mut().trash_selection();
+                let mut widget_flags = canvas.engine_mut().trash_selection();
+                widget_flags.origin = String::from("action_selection_trash");
                 appwindow.handle_widget_flags(widget_flags, &canvas);
             }
         ));
@@ -563,7 +570,8 @@ impl RnAppWindow {
                 let Some(canvas) = appwindow.active_tab_canvas() else {
                     return;
                 };
-                let widget_flags = canvas.engine_mut().duplicate_selection();
+                let mut widget_flags = canvas.engine_mut().duplicate_selection();
+                widget_flags.origin = String::from("action_selection_duplicate");
                 appwindow.handle_widget_flags(widget_flags, &canvas);
             }
         ));
@@ -576,7 +584,8 @@ impl RnAppWindow {
                 let Some(canvas) = appwindow.active_tab_canvas() else {
                     return;
                 };
-                let widget_flags = canvas.engine_mut().invert_selection_colors();
+                let mut widget_flags = canvas.engine_mut().invert_selection_colors();
+                widget_flags.origin = String::from("action_selection_invert_color");
                 appwindow.handle_widget_flags(widget_flags, &canvas);
             }
         ));
@@ -589,7 +598,8 @@ impl RnAppWindow {
                 let Some(canvas) = appwindow.active_tab_canvas() else {
                     return;
                 };
-                let widget_flags = canvas.engine_mut().select_all_strokes();
+                let mut widget_flags = canvas.engine_mut().select_all_strokes();
+                widget_flags.origin = String::from("action_selection_select_all");
                 appwindow.handle_widget_flags(widget_flags, &canvas);
             }
         ));
@@ -602,7 +612,8 @@ impl RnAppWindow {
                 let Some(canvas) = appwindow.active_tab_canvas() else {
                     return;
                 };
-                let widget_flags = canvas.engine_mut().deselect_all_strokes();
+                let mut widget_flags = canvas.engine_mut().deselect_all_strokes();
+                widget_flags.origin = String::from("action_selection_deselect_all");
                 appwindow.handle_widget_flags(widget_flags, &canvas);
             }
         ));
@@ -633,7 +644,8 @@ impl RnAppWindow {
                 let Some(canvas) = appwindow.active_tab_canvas() else {
                     return;
                 };
-                let widget_flags = canvas.engine_mut().undo(Instant::now());
+                let mut widget_flags = canvas.engine_mut().undo(Instant::now());
+                widget_flags.origin = String::from("action_undo_stroke");
                 appwindow.handle_widget_flags(widget_flags, &canvas);
             }
         ));
@@ -646,7 +658,8 @@ impl RnAppWindow {
                 let Some(canvas) = appwindow.active_tab_canvas() else {
                     return;
                 };
-                let widget_flags = canvas.engine_mut().redo(Instant::now());
+                let mut widget_flags = canvas.engine_mut().redo(Instant::now());
+                widget_flags.origin = String::from("action_redo_stroke");
                 appwindow.handle_widget_flags(widget_flags, &canvas);
             }
         ));
@@ -666,6 +679,7 @@ impl RnAppWindow {
                     .engine_mut()
                     .camera
                     .set_viewport_center(viewport_center);
+                widget_flags.origin = String::from("action_zoom_reset");
                 appwindow.handle_widget_flags(widget_flags, &canvas)
             }
         ));
@@ -688,6 +702,7 @@ impl RnAppWindow {
                     .engine_mut()
                     .camera
                     .set_viewport_center(viewport_center);
+                widget_flags.origin = String::from("action_zoom_fit_width");
                 appwindow.handle_widget_flags(widget_flags, &canvas)
             }
         ));
@@ -708,6 +723,7 @@ impl RnAppWindow {
                     .engine_mut()
                     .camera
                     .set_viewport_center(viewport_center);
+                widget_flags.origin = String::from("action_zoomin");
                 appwindow.handle_widget_flags(widget_flags, &canvas)
             }
         ));
@@ -728,6 +744,7 @@ impl RnAppWindow {
                     .engine_mut()
                     .camera
                     .set_viewport_center(viewport_center);
+                widget_flags.origin = String::from("action_zoomout");
                 appwindow.handle_widget_flags(widget_flags, &canvas)
             }
         ));
@@ -740,7 +757,8 @@ impl RnAppWindow {
                 let Some(canvas) = appwindow.active_tab_canvas() else {
                     return;
                 };
-                let widget_flags = canvas.engine_mut().doc_add_page_fixed_size();
+                let mut widget_flags = canvas.engine_mut().doc_add_page_fixed_size();
+                widget_flags.origin = String::from("action_add_page_to_doc");
                 appwindow.handle_widget_flags(widget_flags, &canvas);
             }
         ));
@@ -753,7 +771,8 @@ impl RnAppWindow {
                 let Some(canvas) = appwindow.active_tab_canvas() else {
                     return;
                 };
-                let widget_flags = canvas.engine_mut().doc_remove_page_fixed_size();
+                let mut widget_flags = canvas.engine_mut().doc_remove_page_fixed_size();
+                widget_flags.origin = String::from("action_remove_page_from_doc");
                 appwindow.handle_widget_flags(widget_flags, &canvas);
             }
         ));
@@ -766,7 +785,8 @@ impl RnAppWindow {
                 let Some(canvas) = appwindow.active_tab_canvas() else {
                     return;
                 };
-                let widget_flags = canvas.engine_mut().doc_resize_to_fit_content();
+                let mut widget_flags = canvas.engine_mut().doc_resize_to_fit_content();
+                widget_flags.origin = String::from("action_resize_to_fit_content");
                 appwindow.handle_widget_flags(widget_flags, &canvas);
             }
         ));
@@ -779,9 +799,10 @@ impl RnAppWindow {
                 let Some(canvas) = appwindow.active_tab_canvas() else {
                     return;
                 };
-                let widget_flags = canvas
+                let mut widget_flags = canvas
                     .engine_mut()
                     .return_to_origin(canvas.parent().map(|p| p.width() as f64));
+                widget_flags.origin = String::from("action_return_origin_page");
                 appwindow.handle_widget_flags(widget_flags, &canvas);
             }
         ));
@@ -1024,7 +1045,7 @@ impl RnAppWindow {
                     return;
                 };
                 let receiver = canvas.engine_ref().fetch_clipboard_content();
-                let (content, widget_flags) = match receiver.await {
+                let (content, mut widget_flags) = match receiver.await {
                     Ok(Ok((content, widget_flags))) => (content,widget_flags),
                     Ok(Err(e)) => {
                         error!("Fetching clipboard content failed in clipboard-copy action, Err: {e:?}");
@@ -1044,6 +1065,7 @@ impl RnAppWindow {
                     error!("Set appwindow clipboard content failed in clipboard-copy action, Err: {e:?}");
                 }
 
+                widget_flags.origin = String::from("action_clipboard_copy");
                 appwindow.handle_widget_flags(widget_flags, &canvas);
             }));
         }));
@@ -1056,7 +1078,7 @@ impl RnAppWindow {
                     return;
                 };
                 let receiver = canvas.engine_mut().cut_clipboard_content();
-                let (content, widget_flags) = match receiver.await {
+                let (content, mut widget_flags) = match receiver.await {
                     Ok(Ok((content, widget_flags))) => (content,widget_flags),
                     Ok(Err(e)) => {
                         error!("Cutting clipboard content failed in clipboard-cut action, Err: {e:?}");
@@ -1075,6 +1097,7 @@ impl RnAppWindow {
                     error!("Set appwindow clipboard content failed in clipboard-cut action, Err: {e:?}");
                 }
 
+                widget_flags.origin = String::from("action_clipboard_cut");
                 appwindow.handle_widget_flags(widget_flags, &canvas);
             }));
         }));

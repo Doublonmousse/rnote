@@ -129,7 +129,9 @@ impl RnToolsPage {
 
                 if toggle.is_active() {
                     canvas.engine_mut().pens_config.tools_config.style = ToolStyle::VerticalSpace;
-                    let widget_flags = canvas.engine_mut().reinstall_pen_current_style();
+                    let mut widget_flags = canvas.engine_mut().reinstall_pen_current_style();
+                    widget_flags.origin =
+                        String::from("init imp.toolstyle_verticalspace_toggle.connect_toggled");
                     canvas.emit_handle_widget_flags(widget_flags);
                 }
             }
@@ -145,7 +147,9 @@ impl RnToolsPage {
 
                 if toggle.is_active() {
                     canvas.engine_mut().pens_config.tools_config.style = ToolStyle::OffsetCamera;
-                    let widget_flags = canvas.engine_mut().reinstall_pen_current_style();
+                    let mut widget_flags = canvas.engine_mut().reinstall_pen_current_style();
+                    widget_flags.origin =
+                        String::from("init imp.toolstyle_offsetcamera_toggle.connect_toggled");
                     canvas.emit_handle_widget_flags(widget_flags);
                 }
             }
@@ -161,7 +165,9 @@ impl RnToolsPage {
 
                 if toggle.is_active() {
                     canvas.engine_mut().pens_config.tools_config.style = ToolStyle::Zoom;
-                    let widget_flags = canvas.engine_mut().reinstall_pen_current_style();
+                    let mut widget_flags = canvas.engine_mut().reinstall_pen_current_style();
+                    widget_flags.origin =
+                        String::from("init imp.toolstyle_zoom_toggle.connect_toggled");
                     canvas.emit_handle_widget_flags(widget_flags);
                 }
             }
@@ -177,7 +183,9 @@ impl RnToolsPage {
 
                 if toggle.is_active() {
                     canvas.engine_mut().pens_config.tools_config.style = ToolStyle::Laser;
-                    let widget_flags = canvas.engine_mut().reinstall_pen_current_style();
+                    let mut widget_flags = canvas.engine_mut().reinstall_pen_current_style();
+                    widget_flags.origin =
+                        String::from("init imp.toolstyle_laser_toggle.connect_toggled");
                     canvas.emit_handle_widget_flags(widget_flags);
                 }
             }

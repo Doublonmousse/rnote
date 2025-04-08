@@ -170,13 +170,16 @@ impl RnOverlays {
 
                     match current_pen_style {
                         PenStyle::Typewriter => {
-                            let widget_flags = canvas.engine_mut().text_change_color(stroke_color);
+                            let mut widget_flags =
+                                canvas.engine_mut().text_change_color(stroke_color);
+                            widget_flags.origin = String::from("setup_colorpicker, Typewriter");
                             appwindow.handle_widget_flags(widget_flags, &canvas);
                         }
                         PenStyle::Selector => {
-                            let widget_flags = canvas
+                            let mut widget_flags = canvas
                                 .engine_mut()
                                 .change_selection_stroke_colors(stroke_color);
+                            widget_flags.origin = String::from("setup_colorpicker, Selector");
                             appwindow.handle_widget_flags(widget_flags, &canvas);
                         }
                         PenStyle::Brush | PenStyle::Shaper | PenStyle::Eraser | PenStyle::Tools => {
@@ -206,8 +209,10 @@ impl RnOverlays {
 
                     match stroke_style {
                         PenStyle::Selector => {
-                            let widget_flags =
+                            let mut widget_flags =
                                 canvas.engine_mut().change_selection_fill_colors(fill_color);
+                            widget_flags.origin =
+                                String::from("imp.colorpicker.connect_notify_local, Selector");
                             appwindow.handle_widget_flags(widget_flags, &canvas);
                         }
                         PenStyle::Typewriter
@@ -255,7 +260,8 @@ impl RnOverlays {
                     .prev_active_tab_page
                     .set(Some(&active_tab_page));
 
-                let widget_flags = active_canvaswrapper.canvas().engine_mut().set_active(true);
+                let mut widget_flags = active_canvaswrapper.canvas().engine_mut().set_active(true);
+                widget_flags.origin = String::from("imp.tabview.connect_selected_page_notify");
                 appwindow.handle_widget_flags(widget_flags, &active_canvaswrapper.canvas());
                 appwindow.refresh_ui_from_engine(&active_canvaswrapper);
             }
@@ -268,7 +274,8 @@ impl RnOverlays {
                 let canvaswrapper = page.child().downcast::<RnCanvasWrapper>().unwrap();
                 canvaswrapper.init_reconnect(&appwindow);
                 canvaswrapper.connect_to_tab_page(page);
-                let widget_flags = canvaswrapper.canvas().engine_mut().set_active(true);
+                let mut widget_flags = canvaswrapper.canvas().engine_mut().set_active(true);
+                widget_flags.origin = String::from("imp.tabview.connect_page_attached");
                 appwindow.handle_widget_flags(widget_flags, &canvaswrapper.canvas());
             }
         ));

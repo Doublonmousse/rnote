@@ -136,7 +136,8 @@ impl RnTypewriterPage {
 
                         typewriterpage.imp().prev_picked_font_family.borrow_mut().replace(new_font_family);
                         canvas.engine_mut().pens_config.typewriter_config.text_style.font_family.clone_from(&font_family_name);
-                        let widget_flags = canvas.engine_mut().text_selection_change_style(|style| {style.font_family = font_family_name});
+                        let mut widget_flags = canvas.engine_mut().text_selection_change_style(|style| {style.font_family = font_family_name});
+                        widget_flags.origin = String::from("imp.fontdialog_button");
                         appwindow.handle_widget_flags(widget_flags, &canvas);
                     }
                     Err(e) => debug!("Did not choose new font family (Error or dialog dismissed by user), Err: {e:?}"),
@@ -166,9 +167,11 @@ impl RnTypewriterPage {
                     .typewriter_config
                     .text_style
                     .font_size = font_size;
-                let widget_flags = canvas
+                let mut widget_flags = canvas
                     .engine_mut()
                     .text_selection_change_style(|style| style.font_size = font_size);
+                widget_flags.origin =
+                    String::from("imp.font_size_spinbutton.connect_value_changed");
                 appwindow.handle_widget_flags(widget_flags, &canvas);
             }
         ));
@@ -181,7 +184,8 @@ impl RnTypewriterPage {
                 let Some(canvas) = appwindow.active_tab_canvas() else {
                     return;
                 };
-                let widget_flags = canvas.engine_mut().insert_text(emoji_str.to_string(), None);
+                let mut widget_flags = canvas.engine_mut().insert_text(emoji_str.to_string(), None);
+                widget_flags.origin = String::from("imp.emojichooser.connect_emoji_picked");
                 appwindow.handle_widget_flags(widget_flags, &canvas);
             }
         ));
@@ -194,7 +198,8 @@ impl RnTypewriterPage {
                 let Some(canvas) = appwindow.active_tab_canvas() else {
                     return;
                 };
-                let widget_flags = canvas.engine_mut().text_selection_remove_attributes();
+                let mut widget_flags = canvas.engine_mut().text_selection_remove_attributes();
+                widget_flags.origin = String::from("imp.text_reset_button.connect_clicked");
                 appwindow.handle_widget_flags(widget_flags, &canvas);
             }
         ));
@@ -207,12 +212,13 @@ impl RnTypewriterPage {
                 let Some(canvas) = appwindow.active_tab_canvas() else {
                     return;
                 };
-                let widget_flags =
+                let mut widget_flags =
                     canvas
                         .engine_mut()
                         .text_selection_toggle_attribute(TextAttribute::FontWeight(
                             piet::FontWeight::BOLD.to_raw(),
                         ));
+                widget_flags.origin = String::from("imp.text_bold_button.connect_clicked");
                 appwindow.handle_widget_flags(widget_flags, &canvas);
             }
         ));
@@ -225,9 +231,10 @@ impl RnTypewriterPage {
                 let Some(canvas) = appwindow.active_tab_canvas() else {
                     return;
                 };
-                let widget_flags = canvas
+                let mut widget_flags = canvas
                     .engine_mut()
                     .text_selection_toggle_attribute(TextAttribute::Style(FontStyle::Italic));
+                widget_flags.origin = String::from("imp.text_italic_button.connect_clicked");
                 appwindow.handle_widget_flags(widget_flags, &canvas);
             }
         ));
@@ -240,9 +247,10 @@ impl RnTypewriterPage {
                 let Some(canvas) = appwindow.active_tab_canvas() else {
                     return;
                 };
-                let widget_flags = canvas
+                let mut widget_flags = canvas
                     .engine_mut()
                     .text_selection_toggle_attribute(TextAttribute::Underline(true));
+                widget_flags.origin = String::from("imp.text_underline_button.connect_clicked");
                 appwindow.handle_widget_flags(widget_flags, &canvas);
             }
         ));
@@ -255,9 +263,10 @@ impl RnTypewriterPage {
                 let Some(canvas) = appwindow.active_tab_canvas() else {
                     return;
                 };
-                let widget_flags = canvas
+                let mut widget_flags = canvas
                     .engine_mut()
                     .text_selection_toggle_attribute(TextAttribute::Strikethrough(true));
+                widget_flags.origin = String::from("imp.text_strikethrough_button.connect_clicked");
                 appwindow.handle_widget_flags(widget_flags, &canvas);
             }
         ));
@@ -280,9 +289,12 @@ impl RnTypewriterPage {
                         .typewriter_config
                         .text_style
                         .alignment = TextAlignment::Start;
-                    let widget_flags = canvas.engine_mut().text_selection_change_style(|style| {
-                        style.alignment = TextAlignment::Start
-                    });
+                    let mut widget_flags =
+                        canvas.engine_mut().text_selection_change_style(|style| {
+                            style.alignment = TextAlignment::Start
+                        });
+                    widget_flags.origin =
+                        String::from("imp.text_align_start_togglebutton.connect_active_notify");
                     appwindow.handle_widget_flags(widget_flags, &canvas);
                 }
             ));
@@ -304,9 +316,12 @@ impl RnTypewriterPage {
                         .typewriter_config
                         .text_style
                         .alignment = TextAlignment::Center;
-                    let widget_flags = canvas.engine_mut().text_selection_change_style(|style| {
-                        style.alignment = TextAlignment::Center
-                    });
+                    let mut widget_flags =
+                        canvas.engine_mut().text_selection_change_style(|style| {
+                            style.alignment = TextAlignment::Center
+                        });
+                    widget_flags.origin =
+                        String::from("imp.text_align_center_togglebutton.connect_active_notify");
                     appwindow.handle_widget_flags(widget_flags, &canvas);
                 }
             ));
@@ -328,9 +343,11 @@ impl RnTypewriterPage {
                         .typewriter_config
                         .text_style
                         .alignment = TextAlignment::End;
-                    let widget_flags = canvas
+                    let mut widget_flags = canvas
                         .engine_mut()
                         .text_selection_change_style(|style| style.alignment = TextAlignment::End);
+                    widget_flags.origin =
+                        String::from("imp.text_align_end_togglebutton.connect_active_notify");
                     appwindow.handle_widget_flags(widget_flags, &canvas);
                 }
             ));
@@ -352,9 +369,11 @@ impl RnTypewriterPage {
                         .typewriter_config
                         .text_style
                         .alignment = TextAlignment::Fill;
-                    let widget_flags = canvas
+                    let mut widget_flags = canvas
                         .engine_mut()
                         .text_selection_change_style(|style| style.alignment = TextAlignment::Fill);
+                    widget_flags.origin =
+                        String::from("imp.text_align_fill_togglebutton.connect_active_notify");
                     appwindow.handle_widget_flags(widget_flags, &canvas);
                 }
             ));

@@ -684,6 +684,8 @@ impl RnSettingsPanel {
                         let mut widget_flags =
                             canvas.engine_mut().update_rendering_current_viewport();
                         widget_flags.store_modified = true;
+                        widget_flags.origin =
+                            String::from("imp.doc_format_border_color_button.connect_rgba_notify");
                         appwindow.handle_widget_flags(widget_flags, &canvas);
                     }
                 }
@@ -708,6 +710,8 @@ impl RnSettingsPanel {
                     canvas.engine_mut().document.background.color = background_color;
                     let mut widget_flags = canvas.engine_mut().background_rendering_regenerate();
                     widget_flags.store_modified = true;
+                    widget_flags.origin =
+                        String::from("imp.doc_background_color_button.connect_rgba_notify");
                     appwindow.handle_widget_flags(widget_flags, &canvas);
                 }
             }
@@ -735,6 +739,9 @@ impl RnSettingsPanel {
                     if canvas.engine_ref().document.layout != document_layout {
                         let mut widget_flags = canvas.engine_mut().set_doc_layout(document_layout);
                         widget_flags.store_modified = true;
+                        widget_flags.origin = String::from(
+                            " imp.doc_document_layout_row.get().connect_selected_item_notify",
+                        );
                         appwindow.handle_widget_flags(widget_flags, &canvas);
                     }
                 }
@@ -821,6 +828,9 @@ impl RnSettingsPanel {
                         let mut widget_flags =
                             canvas.engine_mut().background_rendering_regenerate();
                         widget_flags.store_modified = true;
+                        widget_flags.origin = String::from(
+                            "imp.doc_background_patterns_row.get().connect_selected_item_notify",
+                        );
                         appwindow.handle_widget_flags(widget_flags, &canvas);
                     }
                 }
@@ -847,6 +857,9 @@ impl RnSettingsPanel {
                         let mut widget_flags =
                             canvas.engine_mut().background_rendering_regenerate();
                         widget_flags.store_modified = true;
+                        widget_flags.origin = String::from(
+                            "imp.doc_background_pattern_color_button.connect_rgba_notify",
+                        );
                         appwindow.handle_widget_flags(widget_flags, &canvas);
                     }
                 }
@@ -877,6 +890,7 @@ impl RnSettingsPanel {
                             let mut widget_flags =
                                 canvas.engine_mut().background_rendering_regenerate();
                             widget_flags.store_modified = true;
+                            widget_flags.origin = String::from("imp.doc_background_pattern_width_unitentry.get().connect_notify_local");
                             appwindow.handle_widget_flags(widget_flags, &canvas);
                         }
                     }
@@ -908,6 +922,7 @@ impl RnSettingsPanel {
                             let mut widget_flags =
                                 canvas.engine_mut().background_rendering_regenerate();
                             widget_flags.store_modified = true;
+                            widget_flags.origin = String::from("imp.doc_background_pattern_height_unitentry.get().connect_notify_local");
                             appwindow.handle_widget_flags(widget_flags, &canvas);
                         }
                     }
@@ -946,6 +961,9 @@ impl RnSettingsPanel {
 
                     widget_flags.refresh_ui = true;
                     widget_flags.store_modified = true;
+                    widget_flags.origin = String::from(
+                        "imp.background_pattern_invert_color_button.get().connect_clicked",
+                    );
                     appwindow.handle_widget_flags(widget_flags, &canvas);
                 }
             ));
@@ -1199,6 +1217,7 @@ impl RnSettingsPanel {
         canvas.engine_mut().document.format = temporary_format;
         let mut widget_flags = canvas.engine_mut().doc_resize_to_fit_content();
         widget_flags.store_modified = true;
+        widget_flags.origin = String::from("apply_format");
         appwindow.handle_widget_flags(widget_flags, &canvas);
     }
 }

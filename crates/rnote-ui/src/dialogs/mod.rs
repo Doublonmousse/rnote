@@ -65,11 +65,12 @@ pub(crate) async fn dialog_clear_doc(appwindow: &RnAppWindow, canvas: &RnCanvas)
         "clear" => {
             let prev_empty = canvas.empty();
 
-            let widget_flags = canvas.engine_mut().clear();
+            let mut widget_flags = canvas.engine_mut().clear();
+            widget_flags.origin = String::from("dialog_clear_doc");
             appwindow.handle_widget_flags(widget_flags, canvas);
 
             if !prev_empty {
-                canvas.set_unsaved_changes(true);
+                canvas.set_unsaved_changes(true, String::from("dialog_clear_doc"));
                 canvas.set_empty(true);
             }
         }
@@ -87,10 +88,12 @@ pub(crate) async fn dialog_new_doc(appwindow: &RnAppWindow, canvas: &RnCanvas) {
     let dialog: adw::AlertDialog = builder.object("dialog_new_doc").unwrap();
 
     let new_doc = |appwindow: &RnAppWindow, canvas: &RnCanvas| {
-        let widget_flags = canvas.engine_mut().clear();
+        let mut widget_flags = canvas.engine_mut().clear();
+
+        widget_flags.origin = String::from("dialog_new_doc");
         appwindow.handle_widget_flags(widget_flags, canvas);
 
-        canvas.set_unsaved_changes(false);
+        canvas.set_unsaved_changes(false, String::from(""));
         canvas.set_empty(true);
         canvas.set_output_file(None);
     };

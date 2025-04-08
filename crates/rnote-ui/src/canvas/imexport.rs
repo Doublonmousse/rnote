@@ -37,7 +37,7 @@ impl RnCanvas {
 
         self.set_output_file(file_path.map(gio::File::for_path));
         self.dismiss_output_file_modified_toast();
-        self.set_unsaved_changes(false);
+        self.set_unsaved_changes(false, String::from(""));
         self.set_empty(false);
 
         Ok(widget_flags)
@@ -68,7 +68,7 @@ impl RnCanvas {
         self.emit_handle_widget_flags(widget_flags);
 
         self.set_output_file(None);
-        self.set_unsaved_changes(true);
+        self.set_unsaved_changes(true, String::from("load_in_xopp_bytes"));
         self.set_empty(false);
         Ok(())
     }
@@ -266,7 +266,7 @@ impl RnCanvas {
         }
 
         debug!("Saving file has finished successfully");
-        self.set_unsaved_changes(false);
+        self.set_unsaved_changes(false, String::from(""));
         self.set_save_in_progress(false);
 
         Ok(true)
