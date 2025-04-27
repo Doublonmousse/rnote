@@ -155,7 +155,11 @@ lint:
     yamllint .
 
 build:
+    pwd
+    ls
     meson compile ui-cargo-build -C {{ build_folder }}
+    pwd
+    ls
     meson compile cli-cargo-build -C {{ build_folder }}
 
 build-flatpak:
