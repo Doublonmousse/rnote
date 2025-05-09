@@ -12,7 +12,8 @@ use adw::prelude::*;
 use gettextrs::{gettext, pgettext};
 use gtk4::{
     Adjustment, Button, ColorDialogButton, CompositeTemplate, MenuButton, ScrolledWindow,
-    StringList, ToggleButton, Widget, gdk, glib, glib::clone, subclass::prelude::*,
+    StringList, ToggleButton, Widget, gdk, glib, glib::SignalHandlerId, glib::clone,
+    subclass::prelude::*,
 };
 use num_traits::ToPrimitive;
 use rnote_compose::penevent::ShortcutKey;
@@ -20,7 +21,7 @@ use rnote_engine::document::Layout;
 use rnote_engine::document::background::PatternStyle;
 use rnote_engine::document::format::{self, Format, PredefinedFormat};
 use rnote_engine::ext::GdkRGBAExt;
-use std::cell::RefCell;
+use std::cell::{Ref, RefCell};
 
 mod imp {
     use super::*;
@@ -91,8 +92,12 @@ mod imp {
         pub(crate) doc_background_pattern_color_button: TemplateChild<ColorDialogButton>,
         #[template_child]
         pub(crate) doc_background_pattern_width_unitentry: TemplateChild<RnUnitEntry>,
+        pub(crate) doc_background_pattern_width_unitentry_connect_update:
+            RefCell<Option<SignalHandlerId>>,
         #[template_child]
         pub(crate) doc_background_pattern_height_unitentry: TemplateChild<RnUnitEntry>,
+        pub(crate) doc_background_pattern_height_unitentry_connect_update:
+            RefCell<Option<SignalHandlerId>>,
         #[template_child]
         pub(crate) background_pattern_invert_color_button: TemplateChild<Button>,
         #[template_child]
@@ -392,10 +397,10 @@ impl RnSettingsPanel {
             .set_selected(layout.to_u32().unwrap());
     }
 
-    pub(crate) fn refresh_ui(&self, active_tab: &RnCanvasWrapper) {
+    pub(crate) fn refresh_ui(&self, active_tab: &RnCanvasWrapper, init: bool) {
         self.refresh_general_ui(active_tab);
         self.refresh_format_ui(active_tab);
-        self.refresh_doc_ui(active_tab);
+        self.refresh_doc_ui(active_tab, init);
         self.refresh_shortcuts_ui(active_tab);
     }
 
@@ -427,7 +432,7 @@ impl RnSettingsPanel {
         imp.format_height_unitentry.set_value_in_px(format.height());
     }
 
-    fn refresh_doc_ui(&self, active_tab: &RnCanvasWrapper) {
+    fn refresh_doc_ui(&self, active_tab: &RnCanvasWrapper, init: bool) {
         let imp = self.imp();
         let canvas = active_tab.canvas();
         let background = canvas.engine_ref().document.background;
@@ -439,6 +444,10 @@ impl RnSettingsPanel {
         self.set_background_pattern(background.pattern);
         imp.doc_background_pattern_color_button
             .set_rgba(&gdk::RGBA::from_compose_color(background.pattern_color));
+        // this seems like this is the reason here (two width then two height)
+        if init {
+            self.set_signal_state(false);
+        }
         imp.doc_background_pattern_width_unitentry
             .set_dpi(format.dpi());
         imp.doc_background_pattern_width_unitentry
@@ -448,6 +457,9 @@ impl RnSettingsPanel {
         imp.doc_background_pattern_height_unitentry
             .set_value_in_px(background.pattern_size[1]);
         self.set_document_layout(&document_layout);
+        if init {
+            self.set_signal_state(true);
+        }
     }
 
     fn refresh_shortcuts_ui(&self, active_tab: &RnCanvasWrapper) {
@@ -865,6 +877,7 @@ impl RnSettingsPanel {
                 }
             ));
 
+        imp.doc_background_pattern_width_unitentry_connect_update.replace(Some(
         imp.doc_background_pattern_width_unitentry
             .get()
             .connect_notify_local(
@@ -895,8 +908,9 @@ impl RnSettingsPanel {
                         }
                     }
                 ),
-            );
+            )));
 
+        imp.doc_background_pattern_height_unitentry_connect_update.replace(Some(
         imp.doc_background_pattern_height_unitentry
             .get()
             .connect_notify_local(
@@ -927,7 +941,7 @@ impl RnSettingsPanel {
                         }
                     }
                 ),
-            );
+            )));
 
         imp.background_pattern_invert_color_button
             .get()
@@ -1219,6 +1233,51 @@ impl RnSettingsPanel {
         widget_flags.store_modified = true;
         widget_flags.origin = String::from("apply_format");
         appwindow.handle_widget_flags(widget_flags, &canvas);
+    }
+
+    /// with true, reinstates/unblocks the signals for the connect_update methods
+    /// otherwise blocks it
+    fn set_signal_state(&self, pass: bool) {
+        let imp = self.imp();
+
+        Ref::map(
+            imp.doc_background_pattern_height_unitentry_connect_update
+                .borrow(),
+            |x| {
+                match x {
+                    Some(handler_id) => {
+                        if pass {
+                            imp.doc_background_pattern_height_unitentry
+                                .unblock_signal(handler_id)
+                        } else {
+                            imp.doc_background_pattern_height_unitentry
+                                .block_signal(handler_id)
+                        }
+                    }
+                    None => (),
+                }
+                x
+            },
+        );
+        Ref::map(
+            imp.doc_background_pattern_width_unitentry_connect_update
+                .borrow(),
+            |x| {
+                match x {
+                    Some(handler_id) => {
+                        if pass {
+                            imp.doc_background_pattern_width_unitentry
+                                .unblock_signal(handler_id)
+                        } else {
+                            imp.doc_background_pattern_width_unitentry
+                                .block_signal(handler_id)
+                        }
+                    }
+                    None => (),
+                }
+                x
+            },
+        );
     }
 }
 

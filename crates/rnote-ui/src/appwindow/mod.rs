@@ -169,7 +169,7 @@ impl RnAppWindow {
             .redo_button()
             .set_sensitive(false);
         if let Some(wrapper) = self.active_tab_wrapper() {
-            self.refresh_ui_from_engine(&wrapper);
+            self.refresh_ui_from_engine(&wrapper,true);
         }
     }
 
@@ -217,7 +217,7 @@ impl RnAppWindow {
         }
         if widget_flags.refresh_ui {
             if let Some(wrapper) = self.active_tab_wrapper() {
-                self.refresh_ui_from_engine(&wrapper);
+                self.refresh_ui_from_engine(&wrapper,false);
             }
         }
         if widget_flags.store_modified {
@@ -646,7 +646,8 @@ impl RnAppWindow {
     }
 
     /// Refresh the UI from the engine state from the given tab page.
-    pub(crate) fn refresh_ui_from_engine(&self, active_tab: &RnCanvasWrapper) {
+    /// init indicates whether this is from a first boot (loading settings) or not
+    pub(crate) fn refresh_ui_from_engine(&self, active_tab: &RnCanvasWrapper,init:bool) {
         let canvas = active_tab.canvas();
 
         // Avoids already borrowed
@@ -892,7 +893,7 @@ impl RnAppWindow {
             .penssidebar()
             .tools_page()
             .refresh_ui(active_tab);
-        self.sidebar().settings_panel().refresh_ui(active_tab);
+        self.sidebar().settings_panel().refresh_ui(active_tab,init);
         self.refresh_titles(&canvas);
     }
 
