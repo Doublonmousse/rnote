@@ -445,6 +445,7 @@ impl RnSettingsPanel {
         imp.doc_background_pattern_color_button
             .set_rgba(&gdk::RGBA::from_compose_color(background.pattern_color));
         // this seems like this is the reason here (two width then two height)
+        println!("refresh doc ui with init value {:?}", init);
         if init {
             self.set_signal_state(false);
         }
@@ -504,6 +505,7 @@ impl RnSettingsPanel {
     }
 
     pub(crate) fn init(&self, appwindow: &RnAppWindow) {
+        println!("init");
         self.setup_general(appwindow);
         self.setup_format(appwindow);
         self.setup_doc(appwindow);
@@ -1205,7 +1207,7 @@ impl RnSettingsPanel {
         };
         *imp.temporary_format.borrow_mut() = canvas.engine_ref().document.format;
         let revert_format = canvas.engine_ref().document.format;
-
+        println!("revert format");
         self.set_format_predefined_format_variant(format::PredefinedFormat::Custom);
         imp.format_dpi_adj.set_value(revert_format.dpi());
         imp.format_width_unitentry.set_dpi(revert_format.dpi());
@@ -1223,6 +1225,7 @@ impl RnSettingsPanel {
         };
         let temporary_format = *imp.temporary_format.borrow();
 
+        println!("apply format");
         imp.doc_background_pattern_width_unitentry
             .set_dpi_keep_value(temporary_format.dpi());
         imp.doc_background_pattern_height_unitentry
@@ -1238,6 +1241,7 @@ impl RnSettingsPanel {
     /// with true, reinstates/unblocks the signals for the connect_update methods
     /// otherwise blocks it
     fn set_signal_state(&self, pass: bool) {
+        println!("set signal state to {:?}", pass);
         let imp = self.imp();
 
         Ref::map(
@@ -1246,6 +1250,7 @@ impl RnSettingsPanel {
             |x| {
                 match x {
                     Some(handler_id) => {
+                        println!("handler id exists applying");
                         if pass {
                             imp.doc_background_pattern_height_unitentry
                                 .unblock_signal(handler_id)
@@ -1265,6 +1270,7 @@ impl RnSettingsPanel {
             |x| {
                 match x {
                     Some(handler_id) => {
+                        println!("handler id exists applying");
                         if pass {
                             imp.doc_background_pattern_width_unitentry
                                 .unblock_signal(handler_id)

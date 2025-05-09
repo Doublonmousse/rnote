@@ -126,6 +126,7 @@ impl RnAppWindow {
 
     /// Must be called after application is associated with the window else the init will panic
     pub(crate) fn init(&self) {
+        println!("init function");
         let imp = self.imp();
 
         imp.overlays.get().init(self);
@@ -169,6 +170,7 @@ impl RnAppWindow {
             .redo_button()
             .set_sensitive(false);
         if let Some(wrapper) = self.active_tab_wrapper() {
+            println!("refreshing ui from engine (init)");
             self.refresh_ui_from_engine(&wrapper,true);
         }
     }
@@ -217,6 +219,7 @@ impl RnAppWindow {
         }
         if widget_flags.refresh_ui {
             if let Some(wrapper) = self.active_tab_wrapper() {
+                println!("refresh ui from handle_widget_flags");
                 self.refresh_ui_from_engine(&wrapper,false);
             }
         }
@@ -893,6 +896,7 @@ impl RnAppWindow {
             .penssidebar()
             .tools_page()
             .refresh_ui(active_tab);
+        println!("refresh ui from engine with init {:?}",init);
         self.sidebar().settings_panel().refresh_ui(active_tab,init);
         self.refresh_titles(&canvas);
     }

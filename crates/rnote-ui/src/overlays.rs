@@ -263,7 +263,8 @@ impl RnOverlays {
                 let mut widget_flags = active_canvaswrapper.canvas().engine_mut().set_active(true);
                 widget_flags.origin = String::from("imp.tabview.connect_selected_page_notify");
                 appwindow.handle_widget_flags(widget_flags, &active_canvaswrapper.canvas());
-                appwindow.refresh_ui_from_engine(&active_canvaswrapper,false);
+                println!("refresh ui from engine from setup_tabview");
+                appwindow.refresh_ui_from_engine(&active_canvaswrapper,true);
             }
         ));
 
