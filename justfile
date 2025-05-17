@@ -122,7 +122,7 @@ setup-release *MESON_ARGS:
 setup-win-installer installer_name="rnote-win-installer":
     meson setup \
         --prefix={{ mingw64_prefix_path }} \
-        -Dprofile=default \
+        -Dprofile=devel \
         -Dcli=true \
         -Dwin-installer-name={{ installer_name }} \
         -Dci={{ ci }} \
