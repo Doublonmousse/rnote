@@ -9,7 +9,7 @@ name: Release Windows
 
 jobs:
   build:
-    runs-on: windows-2022
+    runs-on: windows-2025
     permissions:
       # needed for uploading release artifact
       contents: write
@@ -17,6 +17,19 @@ jobs:
       run:
         shell: msys2 {0}
     steps:
+      - name: Install Inno 6
+        id: install_inno
+        shell: pwsh
+        run: |
+           $exe_out = Join-Path (Get-Location) is.exe
+           Invoke-WebRequest -Uri https://files.jrsoftware.org/is/6/innosetup-6.4.3.exe -OutFile $exe_out
+           $is_signed = Get-AuthenticodeSignature $exe_out
+           $hash = Get-FileHash $exe_out -Algorithm SHA256
+           If(($is_signed.Status -eq 'Valid') -and ($hash.Hash -eq 'f3c42116542c4cc57263c5ba6c4feabfc49fe771f2f98a79d2f7628b8762723b')) {
+             Start-Process -FilePath $exe_out -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-" -Wait 
+             } else {
+             throw "failed to verify signature"
+             }
 
       - name: Set installer name
         id: set_installer_name
