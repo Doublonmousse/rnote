@@ -218,7 +218,13 @@ pub enum XoppBackgroundType {
         filename: String,
     },
     /// A background with a pdf. Currently **UNIMPLEMENTED**.
-    Pdf,
+    Pdf {
+        /// the domain for the pixmap. Only there for the first page
+        domain: Option<XoppBackgroundPixmapDomain>,
+        /// the filename for the pdf
+        filename: Option<String>,
+        pageno: u64,
+    },
 }
 
 impl XmlWritable for XoppBackgroundType {
@@ -234,7 +240,7 @@ impl XmlWritable for XoppBackgroundType {
                 w.write_attribute("domain", &domain.to_xml_attr_value());
                 w.write_attribute("filename", filename);
             }
-            Self::Pdf => {
+            Self::Pdf { .. } => {
                 w.write_attribute("type", "pdf");
             }
         }
@@ -406,7 +412,39 @@ impl XmlLoadable for XoppBackground {
                 self.bg_type = XoppBackgroundType::Pixmap { domain, filename };
             }
             "pdf" => {
-                self.bg_type = XoppBackgroundType::Pdf;
+                // domain and filename are available only for the first page
+                // pageno is always there
+
+                let domain = match node.attribute("domain") {
+                    None => None,
+                    Some(value) => {
+                        match value {
+                            "absolute" => Some(XoppBackgroundPixmapDomain::Absolute),
+                            "attach" => Some(XoppBackgroundPixmapDomain::Attach),
+                            "clone" => Some(XoppBackgroundPixmapDomain::Clone),
+                            _ => {
+                                return Err(anyhow::anyhow!("Err while parsing `style` attribute of XoppBackground with node id {:?}, is not a valid value", node.id()));
+                            }
+                        }
+                    }
+                };
+
+                let filename = match node.attribute("filename") {
+                        Some(str) => Some(str.to_string()),
+                        None => None
+                    };
+
+                let pageno = u64::from_str_radix(node
+                    .attribute("pageno")
+                    .ok_or_else(|| {
+                        anyhow::anyhow!("Failed to parse `pageno` attribute in XoppBackground with node id {:?}, could not find attribute", node.id())
+                    })?,10)?;
+
+                self.bg_type = XoppBackgroundType::Pdf {
+                    domain,
+                    filename,
+                    pageno,
+                }
             }
             _ => {
                 return Err(anyhow::anyhow!("Failed to parse `type` attribute of XoppBackground with node id {:?}, is not a valid value", node.id()));
