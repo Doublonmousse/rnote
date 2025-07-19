@@ -3,7 +3,7 @@ use gtk4::{gio, prelude::*};
 use tracing::warn;
 
 /// File types supported by Rnote.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub(crate) enum FileType {
     Folder,
     RnoteFile,

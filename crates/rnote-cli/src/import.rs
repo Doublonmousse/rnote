@@ -1,7 +1,9 @@
 // Imports
 use crate::{cli, validators};
+use futures::channel::oneshot;
 use rnote_engine::Engine;
 use rnote_engine::engine::{EngineConfigShared, EngineSnapshot};
+use std::collections::HashMap;
 use std::path::Path;
 
 pub(crate) async fn run_import(
@@ -63,8 +65,32 @@ pub(crate) async fn import_file(
     };
     let input_bytes = cli::read_bytes_from_file(&input_file).await?;
     let xopp_import_prefs = config.read().import_prefs.xopp_import_prefs;
-    let snapshot = EngineSnapshot::load_from_xopp_bytes(input_bytes, xopp_import_prefs).await?;
-    let _ = engine.load_snapshot(snapshot);
+    let (snapshot_sender, snapshot_receiver) = oneshot::channel::<anyhow::Result<EngineSnapshot>>();
+    let (file_request_sender, file_request_receiver) = oneshot::channel::<Option<Vec<String>>>();
+    let (file_bytes_sender, file_bytes_receiver) =
+        oneshot::channel::<Option<HashMap<String, Vec<u8>>>>();
+
+    // maybe we can factorize the closure here
+    let task = smol::spawn(async move {
+        let snapshot = EngineSnapshot::load_from_xopp_bytes(
+            input_bytes,
+            xopp_import_prefs,
+            file_request_sender, // wrong type ?
+            file_bytes_receiver,
+        )
+        .await;
+        let res = snapshot_sender.send(snapshot);
+    });
+    task.detach();
+    // same for this part
+    let file_request = file_request_receiver.await;
+    dbg!(file_request);
+
+    // respond in kind (for now just ignore)
+    let send_file_result = file_bytes_sender.send(None);
+    let engine_snapshot = (snapshot_receiver.await?)?;
+
+    let _ = engine.load_snapshot(engine_snapshot);
     let rnote_bytes = engine.save_as_rnote_bytes(rnote_file_name).await??;
     cli::create_overwrite_file_w_bytes(&rnote_file, &rnote_bytes).await?;
 
