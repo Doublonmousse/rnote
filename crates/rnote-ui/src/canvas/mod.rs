@@ -642,7 +642,7 @@ mod imp {
 
 glib::wrapper! {
     pub(crate) struct RnCanvas(ObjectSubclass<imp::RnCanvas>)
-        @extends gtk4::Widget,
+        @extends Widget,
         @implements gtk4::Accessible, gtk4::Buildable, gtk4::ConstraintTarget, gtk4::Scrollable;
 }
 
@@ -831,12 +831,12 @@ impl RnCanvas {
     }
 
     /// Immutable borrow of the engine.
-    pub(crate) fn engine_ref(&self) -> Ref<Engine> {
+    pub(crate) fn engine_ref(&self) -> Ref<'_, Engine> {
         self.imp().engine.borrow()
     }
 
     /// Mutable borrow of the engine.
-    pub(crate) fn engine_mut(&self) -> RefMut<Engine> {
+    pub(crate) fn engine_mut(&self) -> RefMut<'_, Engine> {
         self.imp().engine.borrow_mut()
     }
 
