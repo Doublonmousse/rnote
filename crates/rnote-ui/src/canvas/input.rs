@@ -178,6 +178,15 @@ pub(crate) fn handle_pointer_controller_event(
                 }
             }
 
+            // workaround for issue https://gitlab.gnome.org/GNOME/gtk/-/issues/7793
+            #[cfg(target_os = "linux")]
+            {
+                if element.pressure > 0.0 && is_stylus {
+                    pen_state = PenState::Down;
+                }
+            }
+
+
             match pen_state {
                 PenState::Up => {
                     canvas.enable_drawing_cursor(false);
