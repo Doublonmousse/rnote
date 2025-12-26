@@ -36,6 +36,17 @@
             </style>
           </object>
         </child>
+        <child>
+          <object class="GtkMenuButton" id="tabbedshapeconfig_menubutton">
+            <property name="icon-name">settings-symbolic</property>
+            <property name="direction">left</property>
+            <property name="tooltip_text" translatable="yes">Tabbed Shape Configuration</property>
+            <property name="popover">tabbed_property_popover</property>
+            <style>
+              <class name="flat" />
+            </style>
+          </object>
+        </child>
       </object>
     </child>
     <child>
@@ -313,6 +324,143 @@ constraints when this switch is off/on</property>
           <child>
             <object class="RnGroupedIconPicker" id="shapebuildertype_picker">
               <property name="width-request">250</property>
+            </object>
+          </child>
+        </object>
+      </child>
+    </object>
+
+    <!-- Tabbed Shape config -->
+    <object class="GtkPopover" id="tabbed_property_popover">
+      <child>
+        <object class="AdwNavigationView" id="navigationview">
+          <property name="animate_transitions">true</property>
+          <child>
+            <object class="AdwNavigationPage" id="page1">
+              <property name="title" translatable="yes">Page 1</property>
+              <property name="tag">page-1</property>
+              <property name="child">
+                <object class="AdwToolbarView" id="toolbar_view_page1">
+                  <property name="content">
+                    <object class="GtkBox">
+                      <property name="orientation">vertical</property>
+                      <property name="margin-top">6</property>
+                      <property name="margin-bottom">6</property>
+                      <property name="margin-start">6</property>
+                      <property name="margin-end">6</property>
+                      <property name="spacing">12</property>
+                      <property name="width-request">330</property>
+                      <child>
+                        <object class="GtkBox">
+                          <child>
+                            <object class="GtkLabel">
+                              <property name="label" translatable="yes">Shape Configuration 1/2</property>
+                              <property name="hexpand">true</property>
+                              <property name="halign">center</property>
+                              <style>
+                                <class name="title-3" />
+                              </style>
+                            </object>
+                          </child>
+                          <child>
+                            <object class="GtkButton" id="page1_to_page2_button">
+                              <property name="icon-name">go-next-view-symbolic</property>
+                              <style>
+                                <class name="raised" />
+                              </style>
+                            </object>
+                          </child>
+                          <child>
+                            <object class="GtkButton" id="page1_popover_close_button">
+                              <property name="icon-name">window-close-symbolic</property>
+                              <style>
+                                <class name="flat" />
+                                <class name="circular" />
+                              </style>
+                            </object>
+                          </child>
+                        </object>
+                      </child>
+                      <child>
+                        <object class="AdwPreferencesGroup">
+                        <child>
+                          <object class="AdwSwitchRow">
+                            <property name="title" translatable="yes">Dummy</property>
+                          </object>
+                        </child>
+                        </object>
+                      </child>
+                    </object>
+                  </property>
+                </object>
+              </property>
+            </object>
+          </child>
+          <child>
+            <object class="AdwNavigationPage" id="page2">
+              <property name="title" translatable="yes">Page 2</property>
+              <property name="tag">page-2</property>
+              <property name="child">
+                <object class="AdwToolbarView" id="toolbar_view_page2">
+                  <property name="content">
+                    <object class="GtkBox">
+                      <property name="orientation">vertical</property>
+                      <property name="margin-top">6</property>
+                      <property name="margin-bottom">6</property>
+                      <property name="margin-start">6</property>
+                      <property name="margin-end">6</property>
+                      <property name="spacing">12</property>
+                      <property name="width-request">330</property>
+                      <child>
+                        <object class="GtkBox">
+                          <child>
+                            <object class="GtkButton" id="page2_to_page1_button">
+                              <property name="icon-name">go-previous-view-symbolic</property>
+                              <style>
+                                <class name="raised" />
+                              </style>
+                            </object>
+                          </child>
+                          <child>
+                            <object class="GtkLabel">
+                              <property name="label" translatable="yes">Shape Configuration 2/2</property>
+                              <property name="hexpand">true</property>
+                              <property name="halign">center</property>
+                              <style>
+                                <class name="title-3" />
+                              </style>
+                            </object>
+                          </child>
+                          <child>
+                            <object class="GtkButton" id="page2_popover_close_button">
+                              <property name="icon-name">window-close-symbolic</property>
+                              <style>
+                                <class name="flat" />
+                                <class name="circular" />
+                              </style>
+                            </object>
+                          </child>
+                        </object>
+                      </child>
+                      <child>
+                        <object class="AdwPreferencesGroup">
+                          <property name="title" translatable="yes">Smooth Style</property>
+                          <child>
+                            <object class="AdwSwitchRow">
+                              <property name="title" translatable="yes">Dummy</property>
+                            </object>
+                          </child>
+                          <child>
+                            <object class="AdwSwitchRow">
+                              <property name="title" translatable="yes">Dummy</property>
+                            </object>
+                          </child>
+                        </object>
+                      </child>
+                    </object>
+                  </property>
+                </object>
+              </property>
             </object>
           </child>
         </object>

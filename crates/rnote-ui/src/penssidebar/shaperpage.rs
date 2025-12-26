@@ -34,6 +34,8 @@ mod imp {
         #[template_child]
         pub(crate) shapeconfig_menubutton: TemplateChild<MenuButton>,
         #[template_child]
+        pub(crate) tabbedshapeconfig_menubutton: TemplateChild<MenuButton>,
+        #[template_child]
         pub(crate) shapeconfig_popover: TemplateChild<Popover>,
         #[template_child]
         pub(crate) shapeconfig_popover_close_button: TemplateChild<Button>,
@@ -70,6 +72,27 @@ mod imp {
 
         #[template_child]
         pub(crate) stroke_width_picker: TemplateChild<RnStrokeWidthPicker>,
+
+        #[template_child]
+        pub(crate) navigationview: TemplateChild<adw::NavigationView>,
+        #[template_child]
+        pub(crate) tabbed_property_popover: TemplateChild<Popover>,
+        #[template_child]
+        pub(crate) page1: TemplateChild<adw::NavigationPage>,
+        #[template_child]
+        pub(crate) page2: TemplateChild<adw::NavigationPage>,
+        #[template_child]
+        pub(crate) toolbar_view_page1: TemplateChild<adw::ToolbarView>,
+        #[template_child]
+        pub(crate) toolbar_view_page2: TemplateChild<adw::ToolbarView>,
+        #[template_child]
+        pub(crate) page1_popover_close_button: TemplateChild<Button>,
+        #[template_child]
+        pub(crate) page2_popover_close_button: TemplateChild<Button>,
+        #[template_child]
+        pub(crate) page1_to_page2_button: TemplateChild<Button>,
+        #[template_child]
+        pub(crate) page2_to_page1_button: TemplateChild<Button>,
     }
 
     #[glib::object_subclass]
@@ -185,6 +208,8 @@ impl RnShaperPage {
         let imp = self.imp();
         let shapeconfig_popover = imp.shapeconfig_popover.get();
         let shapebuildertype_popover = imp.shapebuildertype_popover.get();
+        let tabbedconfig_popover  = imp.tabbed_property_popover.get();
+        let navigationview = imp.navigationview.get();
 
         // Popovers
         imp.shapeconfig_popover_close_button.connect_clicked(clone!(
@@ -192,6 +217,48 @@ impl RnShaperPage {
             shapeconfig_popover,
             move |_| {
                 shapeconfig_popover.popdown();
+            }
+        ));
+
+        // when closing the popover, reset to the page 1
+        // on the next opening
+        imp.tabbed_property_popover.connect_closed(clone!(
+            #[weak]
+            navigationview,
+            move |_| {
+                navigationview.pop_to_tag("page-1");
+            }
+        ));
+
+        imp.page1_popover_close_button.connect_clicked(clone!(
+            #[weak]
+            tabbedconfig_popover,
+            move |_| {
+                tabbedconfig_popover.popdown();
+            }
+        ));
+
+        imp.page2_popover_close_button.connect_clicked(clone!(
+            #[weak]
+            tabbedconfig_popover,
+            move |_| {
+                tabbedconfig_popover.popdown();
+            }
+        ));
+
+        imp.page1_to_page2_button.connect_clicked(clone!(
+            #[weak]
+            navigationview,
+            move |_| {
+                navigationview.push_by_tag("page-2");
+            }
+        ));
+
+        imp.page2_to_page1_button.connect_clicked(clone!(
+            #[weak]
+            navigationview,
+            move |_| {
+                navigationview.pop_to_tag("page-1");
             }
         ));
 
