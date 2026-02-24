@@ -5,8 +5,8 @@ mod penevents;
 use super::PenBehaviour;
 use super::PenStyle;
 use super::pensconfig::selectorconfig::SelectorStyle;
+use crate::Svg;
 use crate::engine::{EngineView, EngineViewMut, StrokeContent};
-use crate::render::Svg;
 use crate::snap::SnapCorner;
 use crate::store::StrokeKey;
 use crate::strokes::Content;
@@ -349,7 +349,9 @@ impl DrawableOnDoc for Selector {
                         }
                     }
                     SelectorStyle::Rectangle => {
-                        if let (Some(first), Some(last)) = (path.first(), path.last()) {
+                        if let Some(first) = path.first()
+                            && let Some(last) = path.last()
+                        {
                             let select_rect = kurbo::Rect::from_points(
                                 first.pos.to_kurbo_point(),
                                 last.pos.to_kurbo_point(),

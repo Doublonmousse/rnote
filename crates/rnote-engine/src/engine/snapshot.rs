@@ -132,15 +132,14 @@ impl EngineSnapshot {
                         xopp_import_prefs.dpi,
                     ));
 
-                if let Some(first_page) = xopp_file.xopp_root.pages.first() {
-                    if let xoppformat::XoppBackgroundType::Solid {
+                if let Some(first_page) = xopp_file.xopp_root.pages.first()
+                    && let xoppformat::XoppBackgroundType::Solid {
                         color: _color,
                         style: _style,
                     } = &first_page.background.bg_type
-                    {
-                        // Xopp background styles are not compatible with Rnotes, so everything is plain for now
-                        engine.document.config.background.pattern = background::PatternStyle::None;
-                    }
+                {
+                    // Xopp background styles are not compatible with Rnotes, so everything is plain for now
+                    engine.document.config.background.pattern = background::PatternStyle::None;
                 }
 
                 // Offsetting as rnote has one global coordinate space
@@ -179,6 +178,20 @@ impl EngineSnapshot {
                                 Err(e) => {
                                     error!(
                                         "Creating Stroke from XoppImage failed while loading Xopp bytes, Err: {e:?}",
+                                    );
+                                }
+                            }
+                        }
+
+                        for new_xopptext in layers.texts.into_iter() {
+                            match Stroke::from_xopptext(new_xopptext, offset, xopp_import_prefs.dpi)
+                            {
+                                Ok(new_text) => {
+                                    engine.store.insert_stroke(new_text, None);
+                                }
+                                Err(e) => {
+                                    error!(
+                                        "Creating Stroke from XoppText failed while loading Xopp bytes, Err: {e:?}",
                                     );
                                 }
                             }

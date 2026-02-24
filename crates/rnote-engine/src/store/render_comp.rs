@@ -1,12 +1,12 @@
 // Imports
 use super::{Stroke, StrokeKey, StrokeStore};
+use crate::Image;
 use crate::engine::{EngineTask, EngineTaskSender};
 use crate::strokes::Content;
 use crate::strokes::content::GeneratedContentImages;
-use crate::{Drawable, render};
+use crate::{Drawable, image};
 use p2d::bounding_volume::{Aabb, BoundingVolume};
 use rnote_compose::ext::AabbExt;
-use std::collections::HashMap;
 use tracing::error;
 
 #[cfg(feature = "ui")]
@@ -32,7 +32,7 @@ impl Default for RenderCompState {
 #[derive(Debug, Clone)]
 pub struct RenderComponent {
     pub(super) state: RenderCompState,
-    pub(super) images: Vec<render::Image>,
+    pub(super) images: Vec<Image>,
     #[cfg(feature = "ui")]
     pub(super) rendernodes: Vec<gtk4::gsk::RenderNode>,
 }
@@ -113,21 +113,20 @@ impl StrokeStore {
         viewport: Aabb,
         image_scale: f64,
     ) {
-        if let (Some(stroke), Some(render_comp)) = (
-            self.stroke_components.get(key),
-            self.render_components.get_mut(key),
-        ) {
+        if let Some(stroke) = self.stroke_components.get(key)
+            && let Some(render_comp) = self.render_components.get_mut(key)
+        {
             if render_comp.state == RenderCompState::BusyRenderingInTask {
                 return;
             }
 
             let viewport_extended =
-                viewport.extend_by(viewport.extents() * render::VIEWPORT_EXTENTS_MARGIN_FACTOR);
+                viewport.extend_by(viewport.extents() * image::VIEWPORT_EXTENTS_MARGIN_FACTOR);
 
             match stroke.gen_images(viewport_extended, image_scale) {
                 Ok(GeneratedContentImages::Partial { images, viewport }) => {
                     #[cfg(feature = "ui")]
-                    match render::Image::images_to_rendernodes(&images) {
+                    match Image::images_to_rendernodes(&images) {
                         Ok(rendernodes) => {
                             render_comp.rendernodes = rendernodes;
                             render_comp.images = images;
@@ -148,7 +147,7 @@ impl StrokeStore {
                 }
                 Ok(GeneratedContentImages::Full(images)) => {
                     #[cfg(feature = "ui")]
-                    match render::Image::images_to_rendernodes(&images) {
+                    match Image::images_to_rendernodes(&images) {
                         Ok(rendernodes) => {
                             render_comp.rendernodes = rendernodes;
                             render_comp.images = images;
@@ -193,17 +192,16 @@ impl StrokeStore {
         viewport: Aabb,
         image_scale: f64,
     ) {
-        if let (Some(render_comp), Some(stroke)) = (
-            self.render_components.get_mut(key),
-            self.stroke_components.get(key),
-        ) {
+        if let Some(stroke) = self.stroke_components.get(key)
+            && let Some(render_comp) = self.render_components.get_mut(key)
+        {
             if render_comp.state == RenderCompState::BusyRenderingInTask {
                 return;
             }
 
             let stroke = stroke.clone();
             let viewport_extended =
-                viewport.extend_by(viewport.extents() * render::VIEWPORT_EXTENTS_MARGIN_FACTOR);
+                viewport.extend_by(viewport.extents() * image::VIEWPORT_EXTENTS_MARGIN_FACTOR);
 
             // indicates that a task is now started rendering the stroke
             render_comp.state = RenderCompState::BusyRenderingInTask;
@@ -253,38 +251,37 @@ impl StrokeStore {
         viewport: Aabb,
         image_scale: f64,
     ) {
-        // use the rtree to reduce the number of keys to search through
-        // for now we are using directly the tree because we want to iter without actually
-        // collecting elements
         let viewport_extended =
-            viewport.extend_by(viewport.extents() * render::VIEWPORT_EXTENTS_MARGIN_FACTOR);
+            viewport.extend_by(viewport.extents() * image::VIEWPORT_EXTENTS_MARGIN_FACTOR);
 
         // we want to iterate on the keys that are in the viewport using the
         // rtree but also get from this the keys that are not in here
         // for that also create a slotmap of keys that are in the viewport
         // so that we can iterate a second time on keys and filter on elements not in the slotmap
-        let mut hashmap_in_viewport: HashMap<StrokeKey, ()> = HashMap::new();
-
-        let keys_in_viewport = self
+        let keys_in_viewport_hash = self
             .key_tree
-            .get_tree()
-            .locate_in_envelope_intersecting(&rstar::AABB::from_corners(
-                [viewport_extended.mins[0], viewport_extended.mins[1]],
-                [viewport_extended.maxs[0], viewport_extended.maxs[1]],
-            ))
-            .map(|object| {
-                let key = object.data;
-                hashmap_in_viewport.insert(key, ());
-                key
-            })
-            .into_iter()
-            .collect::<Vec<StrokeKey>>();
+            .keys_intersecting_bounds_hashset(viewport_extended);
 
-        for key in keys_in_viewport {
-            if let (Some(stroke), Some(render_comp)) = (
-                self.stroke_components.get(key),
-                self.render_components.get_mut(key),
-            ) {
+        // remove stroke keys that we know are not in
+        // the viewport
+        // This way we can skip calculating their bounds
+        for (_key, render_comp) in self
+            .render_components
+            .iter_mut()
+            .filter(|x| !keys_in_viewport_hash.contains_key(&x.0))
+        {
+            #[cfg(feature = "ui")]
+            {
+                render_comp.rendernodes = vec![];
+            }
+            render_comp.images = vec![];
+            render_comp.state = RenderCompState::Dirty;
+        }
+
+        for (key, _) in keys_in_viewport_hash {
+            if let Some(stroke) = self.stroke_components.get(key)
+                && let Some(render_comp) = self.render_components.get_mut(key)
+            {
                 let tasks_tx = tasks_tx.clone();
 
                 // only check if rerendering is not forced
@@ -302,7 +299,7 @@ impl StrokeStore {
                             if old_viewport.contains(
                                 &(viewport.extend_by(
                                     viewport.extents()
-                                        * render::VIEWPORT_EXTENTS_MARGIN_FACTOR
+                                        * image::VIEWPORT_EXTENTS_MARGIN_FACTOR
                                         * VIEWPORT_EXTENTS_MARGIN_RERENDER_THRESHOLD,
                                 )),
                             ) {
@@ -377,16 +374,15 @@ impl StrokeStore {
         viewport: Aabb,
         image_scale: f64,
     ) {
-        if let (Some(stroke), Some(render_comp)) = (
-            self.stroke_components.get(key),
-            self.render_components.get_mut(key),
-        ) {
+        if let Some(stroke) = self.stroke_components.get(key)
+            && let Some(render_comp) = self.render_components.get_mut(key)
+        {
             match stroke.as_ref() {
                 Stroke::BrushStroke(brushstroke) => {
                     match brushstroke.gen_image_for_last_segments(n_last_segments, image_scale) {
                         Ok(Some(image)) => {
                             #[cfg(feature = "ui")]
-                            match render::Image::images_to_rendernodes([&image]) {
+                            match Image::images_to_rendernodes([&image]) {
                                 Ok(mut rendernodes) => {
                                     render_comp.rendernodes.append(&mut rendernodes);
                                     render_comp.images.push(image);
@@ -441,7 +437,7 @@ impl StrokeStore {
             match images {
                 GeneratedContentImages::Partial { images, viewport } => {
                     #[cfg(feature = "ui")]
-                    match render::Image::images_to_rendernodes(&images) {
+                    match Image::images_to_rendernodes(&images) {
                         Ok(rendernodes) => {
                             render_comp.rendernodes = rendernodes;
                             render_comp.images = images;
@@ -449,7 +445,7 @@ impl StrokeStore {
                         }
                         Err(e) => {
                             error!(
-                                "Generating rendernodes failed while replacing rendering with partial images, Err {e:?}"
+                                "Generating rendernodes failed while replacing rendering with partial images, Err: {e:?}"
                             );
                             render_comp.state = RenderCompState::Dirty;
                         }
@@ -462,7 +458,7 @@ impl StrokeStore {
                 }
                 GeneratedContentImages::Full(images) => {
                     #[cfg(feature = "ui")]
-                    match render::Image::images_to_rendernodes(&images) {
+                    match Image::images_to_rendernodes(&images) {
                         Ok(rendernodes) => {
                             render_comp.rendernodes = rendernodes;
                             render_comp.images = images;
@@ -470,7 +466,7 @@ impl StrokeStore {
                         }
                         Err(e) => {
                             error!(
-                                "Generating rendernodes failed while replacing rendering with full images, Err {e:?}"
+                                "Generating rendernodes failed while replacing rendering with full images, Err: {e:?}"
                             );
                             render_comp.state = RenderCompState::Dirty;
                         }
@@ -501,14 +497,14 @@ impl StrokeStore {
                 }
                 | GeneratedContentImages::Full(mut images) => {
                     #[cfg(feature = "ui")]
-                    match render::Image::images_to_rendernodes(&images) {
+                    match Image::images_to_rendernodes(&images) {
                         Ok(mut rendernodes) => {
                             render_comp.rendernodes.append(&mut rendernodes);
                             render_comp.images.append(&mut images);
                         }
                         Err(e) => {
                             error!(
-                                "Generating rendernodes failed while appending rendering full images, Err {e:?}"
+                                "Generating rendernodes failed while appending rendering full images, Err: {e:?}"
                             );
                             render_comp.state = RenderCompState::Dirty;
                         }
@@ -533,6 +529,7 @@ impl StrokeStore {
         use crate::ext::{GdkRGBAExt, GrapheneRectExt};
         use gtk4::{gdk, graphene, prelude::*};
         use rnote_compose::color;
+        use rnote_compose::shapes::Shapeable;
 
         snapshot.push_clip(&graphene::Rect::from_p2d_aabb(doc_bounds));
 
@@ -542,10 +539,9 @@ impl StrokeStore {
         // for stroke content that hasn't changed except the current stroke in progress
         // could be a wortwhile optim
         for key in self.stroke_keys_as_rendered_intersecting_bounds(viewport) {
-            if let (Some(stroke), Some(render_comp)) = (
-                self.stroke_components.get(key),
-                self.render_components.get(key),
-            ) {
+            if let Some(stroke) = self.stroke_components.get(key)
+                && let Some(render_comp) = self.render_components.get(key)
+            {
                 // if the stroke currently does not have a rendering and is will create one,
                 // draw a placeholder filled rect
                 if render_comp.rendernodes.is_empty()
@@ -600,10 +596,10 @@ impl StrokeStore {
         image_scale: f64,
     ) {
         for key in self.stroke_keys_as_rendered_intersecting_bounds(viewport) {
-            if let Some(stroke) = self.stroke_components.get(key) {
-                if let Err(e) = stroke.draw(piet_cx, image_scale) {
-                    error!("Drawing stroke immediate on piet RenderContext failed , Err: {e:?}");
-                }
+            if let Some(stroke) = self.stroke_components.get(key)
+                && let Err(e) = stroke.draw(piet_cx, image_scale)
+            {
+                error!("Drawing stroke immediate on piet RenderContext failed , Err: {e:?}");
             }
         }
     }
@@ -618,16 +614,16 @@ impl StrokeStore {
     ) -> anyhow::Result<()> {
         use crate::engine::visual_debug;
         use gtk4::prelude::*;
+        use rnote_compose::shapes::Shapeable;
 
         let border_widths = 1.0 / engine.camera.total_zoom();
-
         for key in self.keys_sorted_chrono() {
-            if let Some(stroke) = self.stroke_components.get(key) {
+            if let Some(stroke) = self.stroke_components.get(key)
+                && let Some(trash_comp) = self.trash_components.get(key)
+            {
                 // Push opacity for strokes which are normally hidden
-                if let Some(trash_comp) = self.trash_components.get(key) {
-                    if trash_comp.trashed {
-                        snapshot.push_opacity(0.2);
-                    }
+                if trash_comp.trashed {
+                    snapshot.push_opacity(0.2);
                 }
 
                 if let Some(render_comp) = self.render_components.get(key) {
@@ -691,10 +687,10 @@ impl StrokeStore {
                 }
 
                 // Pop Blur and opacity for hidden strokes
-                if let Some(trash_comp) = self.trash_components.get(key) {
-                    if trash_comp.trashed {
-                        snapshot.pop();
-                    }
+                if let Some(trash_comp) = self.trash_components.get(key)
+                    && trash_comp.trashed
+                {
+                    snapshot.pop();
                 }
             }
         }

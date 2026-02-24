@@ -18,6 +18,7 @@ pub use snapshot::EngineSnapshot;
 pub use strokecontent::StrokeContent;
 
 // Imports
+use crate::Image;
 use crate::document::Layout;
 use crate::pens::PenMode;
 use crate::pens::{Pen, PenStyle};
@@ -25,7 +26,7 @@ use crate::store::StrokeKey;
 use crate::store::render_comp::{self, RenderCompState};
 use crate::strokes::content::GeneratedContentImages;
 use crate::strokes::textstroke::{TextAttribute, TextStyle};
-use crate::{AudioPlayer, SelectionCollision, WidgetFlags, render};
+use crate::{AudioPlayer, SelectionCollision, WidgetFlags};
 use crate::{Camera, Document, PenHolder, StrokeStore};
 use futures::StreamExt;
 use futures::channel::mpsc::UnboundedReceiver;
@@ -196,14 +197,13 @@ pub struct Engine {
     tasks_rx: Option<EngineTaskReceiver>,
     // Background rendering
     #[serde(skip)]
-    background_tile_image: Option<render::Image>,
+    background_tile_image: Option<Image>,
     #[cfg(feature = "ui")]
     #[serde(skip)]
     background_rendernode: Option<gtk4::gsk::RenderNode>,
-    origin_background_rendernode: Option<Aabb>,
     // Origin indicator rendering
     #[serde(skip)]
-    origin_indicator_image: Option<render::Image>,
+    origin_indicator_image: Option<Image>,
     #[cfg(feature = "ui")]
     #[serde(skip)]
     origin_indicator_rendernode: Option<gtk4::gsk::RenderNode>,
@@ -227,7 +227,6 @@ impl Default for Engine {
             background_tile_image: None,
             #[cfg(feature = "ui")]
             background_rendernode: None,
-            origin_background_rendernode: None,
             origin_indicator_image: None,
             #[cfg(feature = "ui")]
             origin_indicator_rendernode: None,
@@ -246,11 +245,9 @@ impl Engine {
         let mut widget_flags = WidgetFlags::default();
 
         let pen_sounds = config.read().pen_sounds;
-        let optimize_epd = config.read().optimize_epd;
 
         self.config = config.clone();
         self.set_pen_sounds(pen_sounds, data_dir);
-        self.set_optimize_epd(optimize_epd);
 
         widget_flags |= self
             .penholder
@@ -302,10 +299,6 @@ impl Engine {
 
     pub fn optimize_epd(&self) -> bool {
         self.config.read().optimize_epd
-    }
-
-    pub fn set_optimize_epd(&mut self, optimize_epd: bool) {
-        self.config.write().optimize_epd = optimize_epd;
     }
 
     /// Takes a snapshot of the current state.
@@ -898,9 +891,9 @@ impl Engine {
     /// Handle a requested animation frame.
     ///
     /// Can request another frame using `EngineViewMut#animation.claim_frame()`.
-    pub fn handle_animation_frame(&mut self, optimize_epd: bool) {
+    pub fn handle_animation_frame(&mut self) {
         self.penholder
-            .handle_animation_frame(&mut engine_view_mut!(self), optimize_epd);
+            .handle_animation_frame(&mut engine_view_mut!(self));
     }
 
     pub fn current_pen_style_w_override(&self) -> PenStyle {
