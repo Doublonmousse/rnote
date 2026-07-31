@@ -28,6 +28,8 @@ where
     fn floor(&self) -> Self;
     /// Converts to kurbo::Point
     fn to_kurbo_point(&self) -> kurbo::Point;
+    /// converts to vello kurbo::Point
+    fn to_kurbo_point_vello(&self) -> vello_cpu::kurbo::Point;
     /// Converts to kurbo::Vec2
     fn to_kurbo_vec(&self) -> kurbo::Vec2;
     /// Converts from kurbo::Point
@@ -82,6 +84,13 @@ impl Vector2Ext for Vector2 {
 
     fn to_kurbo_point(&self) -> kurbo::Point {
         kurbo::Point {
+            x: self.x,
+            y: self.y,
+        }
+    }
+
+    fn to_kurbo_point_vello(&self) -> vello_cpu::kurbo::Point {
+        vello_cpu::kurbo::Point {
             x: self.x,
             y: self.y,
         }
@@ -430,6 +439,8 @@ where
 {
     /// converting to kurbo affine
     fn to_kurbo(self) -> kurbo::Affine;
+    /// converting to kurbo affine
+    fn to_kurbo_vello(self) -> vello_cpu::kurbo::Affine;
     /// converting from kurbo affine
     fn from_kurbo(affine: kurbo::Affine) -> Self;
     /// Transforms the Aabb vertices and calculates a new that contains them.
@@ -442,7 +453,9 @@ where
     fn append_scale_mut(&mut self, scale: Vector2);
     /// Convert the transform to a Svg attribute string, insertable into svg elements.
     fn to_svg_transform_attr_str(&self) -> String;
+    
 }
+
 
 impl DAffine2Ext for DAffine2 {
     fn to_kurbo(self) -> kurbo::Affine {
@@ -456,6 +469,19 @@ impl DAffine2Ext for DAffine2 {
             array[2][1],
         ])
     }
+
+    fn to_kurbo_vello(self) -> vello_cpu::kurbo::Affine {
+        let array = self.to_cols_array_2d();
+        vello_cpu::kurbo::Affine::new([
+            array[0][0],
+            array[0][1],
+            array[1][0],
+            array[1][1],
+            array[2][0],
+            array[2][1],
+        ])
+    }
+
 
     fn from_kurbo(affine: kurbo::Affine) -> Self {
         let matrix = affine.as_coeffs();

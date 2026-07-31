@@ -64,6 +64,10 @@ impl Composer<RoughOptions> for Line {
 
         cx.restore().unwrap();
     }
+
+    fn draw_composed_vello(&self, cx: &mut vello_cpu::RenderContext, options: &RoughOptions) {
+        todo!();
+    }
 }
 
 impl Composer<RoughOptions> for Arrow {
@@ -107,6 +111,10 @@ impl Composer<RoughOptions> for Arrow {
 
         cx.restore().unwrap();
     }
+
+    fn draw_composed_vello(&self, cx: &mut vello_cpu::RenderContext, options: &RoughOptions) {
+        todo!();
+    }
 }
 
 impl Composer<RoughOptions> for Rectangle {
@@ -133,6 +141,10 @@ impl Composer<RoughOptions> for Rectangle {
 
         cx.restore().unwrap();
     }
+    
+    fn draw_composed_vello(&self, cx: &mut vello_cpu::RenderContext, options: &RoughOptions) {
+        todo!();
+    }
 }
 
 impl Composer<RoughOptions> for Ellipse {
@@ -153,6 +165,10 @@ impl Composer<RoughOptions> for Ellipse {
         drawable.draw(cx);
 
         cx.restore().unwrap();
+    }
+
+    fn draw_composed_vello(&self, cx: &mut vello_cpu::RenderContext, options: &RoughOptions) {
+        todo!();
     }
 }
 
@@ -176,6 +192,10 @@ impl Composer<RoughOptions> for QuadraticBezier {
 
         cx.restore().unwrap();
     }
+
+    fn draw_composed_vello(&self, cx: &mut vello_cpu::RenderContext, options: &RoughOptions) {
+        todo!();
+    }
 }
 
 impl Composer<RoughOptions> for CubicBezier {
@@ -198,6 +218,10 @@ impl Composer<RoughOptions> for CubicBezier {
         drawable.draw(cx);
 
         cx.restore().unwrap();
+    }
+
+    fn draw_composed_vello(&self, cx: &mut vello_cpu::RenderContext, options: &RoughOptions) {
+        todo!();
     }
 }
 
@@ -224,6 +248,10 @@ impl Composer<RoughOptions> for Polyline {
 
         drawable.draw(cx);
     }
+
+    fn draw_composed_vello(&self, cx: &mut vello_cpu::RenderContext, options: &RoughOptions) {
+        todo!();
+    }
 }
 
 impl Composer<RoughOptions> for Polygon {
@@ -248,6 +276,10 @@ impl Composer<RoughOptions> for Polygon {
             rough_piet::KurboGenerator::new(generate_roughr_options(options)).polygon(&points);
 
         drawable.draw(cx);
+    }
+
+    fn draw_composed_vello(&self, cx: &mut vello_cpu::RenderContext, options: &RoughOptions) {
+        todo!();
     }
 }
 
@@ -276,5 +308,9 @@ impl Composer<RoughOptions> for crate::Shape {
             crate::Shape::Polyline(polyline) => polyline.draw_composed(cx, options),
             crate::Shape::Polygon(polygon) => polygon.draw_composed(cx, options),
         }
+    }
+
+    fn draw_composed_vello(&self, cx: &mut vello_cpu::RenderContext, options: &RoughOptions) {
+        todo!();
     }
 }

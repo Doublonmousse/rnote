@@ -35,6 +35,10 @@ impl Composer<SmoothOptions> for Line {
         }
         cx.restore().unwrap();
     }
+
+    fn draw_composed_vello(&self, cx: &mut vello_cpu::RenderContext, options: &SmoothOptions) {
+        todo!();
+    }
 }
 
 impl Composer<SmoothOptions> for Arrow {
@@ -57,6 +61,10 @@ impl Composer<SmoothOptions> for Arrow {
         }
 
         cx.restore().unwrap();
+    }
+
+    fn draw_composed_vello(&self, cx: &mut vello_cpu::RenderContext, options: &SmoothOptions) {
+        todo!();
     }
 }
 
@@ -85,6 +93,10 @@ impl Composer<SmoothOptions> for Rectangle {
         }
         cx.restore().unwrap();
     }
+
+    fn draw_composed_vello(&self, cx: &mut vello_cpu::RenderContext, options: &SmoothOptions) {
+        todo!();
+    }
 }
 
 impl Composer<SmoothOptions> for Ellipse {
@@ -111,6 +123,10 @@ impl Composer<SmoothOptions> for Ellipse {
             );
         }
         cx.restore().unwrap();
+    }
+
+    fn draw_composed_vello(&self, cx: &mut vello_cpu::RenderContext, options: &SmoothOptions) {
+        todo!();
     }
 }
 
@@ -139,6 +155,10 @@ impl Composer<SmoothOptions> for QuadraticBezier {
         }
         cx.restore().unwrap();
     }
+
+    fn draw_composed_vello(&self, cx: &mut vello_cpu::RenderContext, options: &SmoothOptions) {
+        todo!();
+    }
 }
 
 impl Composer<SmoothOptions> for CubicBezier {
@@ -165,6 +185,10 @@ impl Composer<SmoothOptions> for CubicBezier {
             );
         }
         cx.restore().unwrap();
+    }
+
+    fn draw_composed_vello(&self, cx: &mut vello_cpu::RenderContext, options: &SmoothOptions) {
+        todo!();
     }
 }
 
@@ -199,6 +223,10 @@ impl Composer<SmoothOptions> for Polyline {
                 &style,
             );
         }
+    }
+
+    fn draw_composed_vello(&self, cx: &mut vello_cpu::RenderContext, options: &SmoothOptions) {
+        todo!();
     }
 }
 
@@ -238,6 +266,10 @@ impl Composer<SmoothOptions> for Polygon {
                 &style,
             );
         }
+    }
+
+    fn draw_composed_vello(&self, cx: &mut vello_cpu::RenderContext, options: &SmoothOptions) {
+        todo!();
     }
 }
 
@@ -367,6 +399,135 @@ impl Composer<SmoothOptions> for PenPath {
 
         cx.restore().unwrap();
     }
+
+    fn draw_composed_vello(&self, cx: &mut vello_cpu::RenderContext, options: &SmoothOptions) {
+        let Some(color) = options.stroke_color else {
+            return;
+        };
+
+        let mut full_path = vello_cpu::kurbo::BezPath::new();
+        let mut single_pos = true;
+        let mut prev = self.start;
+
+        let current_state = cx.save_current_state();
+
+        for seg in self.segments.iter() {
+            if seg.end().pos == self.start.pos {
+                continue;
+            } else {
+                single_pos = false;
+            }
+
+            let bez_path = {
+                match seg {
+                    Segment::LineTo { end } => {
+                        let (width_start, width_end) = (
+                            options
+                                .pressure_curve
+                                .apply(options.stroke_width, prev.pressure),
+                            options
+                                .pressure_curve
+                                .apply(options.stroke_width, end.pressure),
+                        );
+
+                        let bez_path = compose_lines_variable_width_vello(
+                            &[Line {
+                                start: prev.pos,
+                                end: end.pos,
+                            }],
+                            width_start,
+                            width_end,
+                            options,
+                        );
+
+                        prev = *end;
+                        bez_path
+                    }
+                    Segment::QuadBezTo { cp, end } => {
+                        let (width_start, width_end) = (
+                            options
+                                .pressure_curve
+                                .apply(options.stroke_width, prev.pressure),
+                            options
+                                .pressure_curve
+                                .apply(options.stroke_width, end.pressure),
+                        );
+
+                        let quadbez = QuadraticBezier {
+                            start: prev.pos,
+                            cp: *cp,
+                            end: end.pos,
+                        };
+                        let n_splits = penpath::no_subsegments_for_segment_len(
+                            quadbez.outline_path().perimeter(0.25),
+                        )
+                        .max(2);
+                        let lines = quadbez.approx_with_lines(n_splits);
+                        let bez_path = compose_lines_variable_width_vello(
+                            &lines,
+                            width_start,
+                            width_end,
+                            options,
+                        );
+
+                        prev = *end;
+                        bez_path
+                    }
+                    Segment::CubBezTo { cp1, cp2, end } => {
+                        let (width_start, width_end) = (
+                            options
+                                .pressure_curve
+                                .apply(options.stroke_width, prev.pressure),
+                            options
+                                .pressure_curve
+                                .apply(options.stroke_width, end.pressure),
+                        );
+
+                        let cubbez = CubicBezier {
+                            start: prev.pos,
+                            cp1: *cp1,
+                            cp2: *cp2,
+                            end: end.pos,
+                        };
+                        let n_splits = penpath::no_subsegments_for_segment_len(
+                            cubbez.outline_path().perimeter(0.25),
+                        )
+                        .max(2);
+                        let lines = cubbez.approx_with_lines(n_splits);
+                        let bez_path = compose_lines_variable_width_vello(
+                            &lines,
+                            width_start,
+                            width_end,
+                            options,
+                        );
+
+                        prev = *end;
+                        bez_path
+                    }
+                }
+            };
+
+            full_path.extend(bez_path);
+        }
+
+        cx.set_paint(color.to_vello());
+        cx.fill_path(&full_path);
+
+        // Single element/position strokes need special treatment to be rendered
+        if single_pos {
+            let start_width = options
+                .pressure_curve
+                .apply(options.stroke_width, self.start.pressure);
+
+            let path_circle = vello_cpu::kurbo::Circle::new(
+                self.start.pos.to_kurbo_point_vello(),
+                start_width * 0.5,
+            );
+            cx.fill_path(&vello_cpu::kurbo::Shape::to_path(&path_circle, 0.1));
+        }
+
+        cx.restore_state(current_state);
+    }
 }
 
 impl Composer<SmoothOptions> for crate::Shape {
@@ -394,6 +555,10 @@ impl Composer<SmoothOptions> for crate::Shape {
             crate::Shape::Polyline(polyline) => polyline.draw_composed(cx, options),
             crate::Shape::Polygon(polygon) => polygon.draw_composed(cx, options),
         }
+    }
+
+    fn draw_composed_vello(&self, cx: &mut vello_cpu::RenderContext, options: &SmoothOptions) {
+        todo!();
     }
 }
 
@@ -485,6 +650,102 @@ fn compose_lines_variable_width(
             .into_iter()
             .rev()
             .map(|c| kurbo::PathEl::LineTo(c.to_kurbo_point())),
+    );
+    bez_path.close_path();
+
+    bez_path
+}
+
+/// Composes lines with variable width. Must be drawn with only a fill.
+fn compose_lines_variable_width_vello(
+    lines: &[Line],
+    start_width: f64,
+    end_width: f64,
+    _options: &SmoothOptions,
+) -> vello_cpu::kurbo::BezPath {
+    // The lines variable is ghosted here, to make sure we can only use the filtered
+    let lines = lines
+        .iter()
+        .filter(|line| (line.end - line.start).length() > 0.0)
+        .collect::<Vec<&Line>>();
+    let n_lines = lines.len();
+    if n_lines == 0 {
+        return vello_cpu::kurbo::BezPath::new();
+    }
+
+    let (pos_offset_coords, neg_offset_coords): (Vec<_>, Vec<_>) = lines
+        .iter()
+        .enumerate()
+        .flat_map(|(i, line)| {
+            let line_start_width = start_width
+                + (end_width - start_width) * (f64::from(i as i32) / f64::from(n_lines as u32));
+            let line_end_width = start_width
+                + (end_width - start_width) * (f64::from(i as i32 + 1) / f64::from(n_lines as u32));
+
+            let dir_orth_unit = (line.end - line.start).orth_unit();
+
+            [
+                (
+                    line.start + dir_orth_unit * line_start_width * 0.5,
+                    line.start - dir_orth_unit * line_start_width * 0.5,
+                ),
+                (
+                    line.end + dir_orth_unit * line_end_width * 0.5,
+                    line.end - dir_orth_unit * line_end_width * 0.5,
+                ),
+            ]
+        })
+        .unzip();
+
+    let first_line = lines.first().unwrap();
+    let last_line = lines.last().unwrap();
+    let start_dir_unit = (first_line.end - first_line.start).normalize();
+    let end_dir_unit = (last_line.end - last_line.start).normalize();
+    let start_pos_offset_coord = pos_offset_coords.first().unwrap().to_owned();
+    let end_pos_offset_coord = pos_offset_coords.last().unwrap().to_owned();
+    let start_neg_offset_coord = neg_offset_coords.first().unwrap().to_owned();
+    let end_neg_offset_coord = neg_offset_coords.last().unwrap().to_owned();
+
+    let mut bez_path = vello_cpu::kurbo::BezPath::new();
+
+    // Start cap
+    if start_width > 0.0 && start_pos_offset_coord != start_neg_offset_coord {
+        bez_path.move_to(start_neg_offset_coord.to_kurbo_point_vello());
+        bez_path.curve_to(
+            (start_neg_offset_coord - start_dir_unit * start_width * (2.0 / 3.0))
+                .to_kurbo_point_vello(),
+            (start_pos_offset_coord - start_dir_unit * start_width * (2.0 / 3.0))
+                .to_kurbo_point_vello(),
+            start_pos_offset_coord.to_kurbo_point_vello(),
+        );
+    } else {
+        bez_path.move_to(start_pos_offset_coord.to_kurbo_point_vello());
+    }
+
+    // Positive offset path
+    bez_path.extend(
+        pos_offset_coords
+            .into_iter()
+            .map(|c| vello_cpu::kurbo::PathEl::LineTo(c.to_kurbo_point_vello())),
+    );
+
+    // End cap
+    if end_width > 0.0 && end_pos_offset_coord != end_neg_offset_coord {
+        bez_path.curve_to(
+            (end_pos_offset_coord + end_dir_unit * end_width * (2.0 / 3.0)).to_kurbo_point_vello(),
+            (end_neg_offset_coord + end_dir_unit * end_width * (2.0 / 3.0)).to_kurbo_point_vello(),
+            end_neg_offset_coord.to_kurbo_point_vello(),
+        );
+    } else {
+        bez_path.line_to(end_neg_offset_coord.to_kurbo_point_vello());
+    }
+
+    // Negative offset path (needs to be reversed)
+    bez_path.extend(
+        neg_offset_coords
+            .into_iter()
+            .rev()
+            .map(|c| vello_cpu::kurbo::PathEl::LineTo(c.to_kurbo_point_vello())),
     );
     bez_path.close_path();
 

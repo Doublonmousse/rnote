@@ -64,9 +64,21 @@ impl Content for BrushStroke {
             // generate a single image when bounds are smaller than threshold
             match &self.style {
                 Style::Smooth(options) => {
-                    let image = Image::gen_with_piet(
-                        |piet_cx| {
-                            self.path.draw_composed(piet_cx, options);
+                    // let image = Image::gen_with_piet(
+                    //     |piet_cx| {
+                    //         self.path.draw_composed(piet_cx, options);
+                    //         Ok(())
+                    //     },
+                    //     bounds,
+                    //     image_scale,
+                    // );
+
+                    // let's do this little by little
+                    // let's add a draw composed method that renders to a vello render component instead here
+                    println!("image scale {:?}", image_scale);
+                    let image = Image::gen_with_vello(
+                        |cx| {
+                            self.path.draw_composed_vello(cx, options);
                             Ok(())
                         },
                         bounds,

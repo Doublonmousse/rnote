@@ -30,6 +30,10 @@ impl Composer<TexturedOptions> for Line {
             cx.fill(bez_path, &fill_brush);
         }
     }
+
+    fn draw_composed_vello(&self, cx: &mut vello_cpu::RenderContext, options: &TexturedOptions) {
+        todo!();
+    }
 }
 
 impl Composer<TexturedOptions> for PenPath {
@@ -108,6 +112,10 @@ impl Composer<TexturedOptions> for PenPath {
         }
 
         cx.fill(full_path, &Into::<piet::Color>::into(color));
+    }
+
+    fn draw_composed_vello(&self, cx: &mut vello_cpu::RenderContext, options: &TexturedOptions) {
+        todo!();
     }
 }
 

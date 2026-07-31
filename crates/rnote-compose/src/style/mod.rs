@@ -135,6 +135,10 @@ impl Composer<Style> for Line {
             Style::Textured(options) => self.draw_composed(cx, options),
         }
     }
+
+    fn draw_composed_vello(&self, cx: &mut vello_cpu::RenderContext, options: &Style) {
+        todo!();
+    }
 }
 
 impl Composer<Style> for Arrow {
@@ -152,6 +156,10 @@ impl Composer<Style> for Arrow {
             Style::Rough(options) => self.draw_composed(cx, options),
             Style::Textured(_options) => unimplemented!(),
         }
+    }
+
+    fn draw_composed_vello(&self, cx: &mut vello_cpu::RenderContext, options: &Style) {
+        todo!();
     }
 }
 
@@ -171,6 +179,10 @@ impl Composer<Style> for Rectangle {
             Style::Textured(_options) => unimplemented!(),
         }
     }
+
+    fn draw_composed_vello(&self, cx: &mut vello_cpu::RenderContext, options: &Style) {
+        todo!();
+    }
 }
 
 impl Composer<Style> for Ellipse {
@@ -188,6 +200,10 @@ impl Composer<Style> for Ellipse {
             Style::Rough(options) => self.draw_composed(cx, options),
             Style::Textured(_options) => unimplemented!(),
         }
+    }
+
+    fn draw_composed_vello(&self, cx: &mut vello_cpu::RenderContext, options: &Style) {
+        todo!();
     }
 }
 
@@ -207,6 +223,10 @@ impl Composer<Style> for QuadraticBezier {
             Style::Textured(_options) => unimplemented!(),
         }
     }
+
+    fn draw_composed_vello(&self, cx: &mut vello_cpu::RenderContext, options: &Style) {
+        todo!();
+    }
 }
 
 impl Composer<Style> for CubicBezier {
@@ -224,6 +244,10 @@ impl Composer<Style> for CubicBezier {
             Style::Rough(options) => self.draw_composed(cx, options),
             Style::Textured(_options) => unimplemented!(),
         }
+    }
+
+    fn draw_composed_vello(&self, cx: &mut vello_cpu::RenderContext, options: &Style) {
+        todo!();
     }
 }
 
@@ -243,6 +267,10 @@ impl Composer<Style> for Polyline {
             Style::Textured(_options) => unimplemented!(),
         }
     }
+
+    fn draw_composed_vello(&self, cx: &mut vello_cpu::RenderContext, options: &Style) {
+        todo!();
+    }
 }
 
 impl Composer<Style> for Polygon {
@@ -261,6 +289,10 @@ impl Composer<Style> for Polygon {
             Style::Textured(_options) => unimplemented!(),
         }
     }
+
+    fn draw_composed_vello(&self, cx: &mut vello_cpu::RenderContext, options: &Style) {
+        todo!();
+    }
 }
 
 impl Composer<Style> for PenPath {
@@ -278,6 +310,10 @@ impl Composer<Style> for PenPath {
             Style::Rough(_) => unimplemented!(),
             Style::Textured(options) => self.draw_composed(cx, options),
         }
+    }
+
+    fn draw_composed_vello(&self, cx: &mut vello_cpu::RenderContext, options: &Style) {
+        todo!();
     }
 }
 
@@ -306,6 +342,10 @@ impl Composer<Style> for Shape {
             Shape::Polyline(polyline) => polyline.draw_composed(cx, options),
             Shape::Polygon(polygon) => polygon.draw_composed(cx, options),
         }
+    }
+
+    fn draw_composed_vello(&self, cx: &mut vello_cpu::RenderContext, options: &Style) {
+        todo!();
     }
 }
 

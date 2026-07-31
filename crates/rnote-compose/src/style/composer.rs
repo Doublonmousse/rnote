@@ -11,4 +11,7 @@ where
 
     /// Composes and draws the type onto the context, applying the style options to it.
     fn draw_composed(&self, cx: &mut impl piet::RenderContext, options: &O);
+
+    /// Same as draw composed but for vello
+    fn draw_composed_vello(&self, cx: &mut vello_cpu::RenderContext, options: &O);
 }

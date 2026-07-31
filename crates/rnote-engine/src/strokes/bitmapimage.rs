@@ -77,7 +77,7 @@ impl Shapeable for BitmapImage {
     }
 
     fn hitboxes(&self) -> Vec<Aabb> {
-        vec![self.bounds()]
+        return vec![self.bounds()]
     }
 
     fn outline_path(&self) -> kurbo::BezPath {

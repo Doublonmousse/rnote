@@ -164,6 +164,16 @@ impl Color {
             ((1000.0 * self.a).round() / 1000.0),
         )
     }
+
+    /// convert color to the vello cpu paint type
+    pub fn to_vello(self) -> vello_cpu::PaintType {
+        return vello_cpu::PaintType::Solid(vello_cpu::color::AlphaColor::from_rgba8(
+            (self.r * 255.0) as u8,
+            (self.g * 255.0) as u8,
+            (self.b * 255.0) as u8,
+            (self.a * 255.0) as u8,
+        ));
+    }
 }
 
 impl From<piet::Color> for Color {

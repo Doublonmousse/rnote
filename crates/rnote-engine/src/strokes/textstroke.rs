@@ -1,9 +1,11 @@
 // Imports
 use super::Content;
+use crate::Image;
+use crate::strokes::content::GeneratedContentImages;
 use crate::{Camera, Drawable};
 use itertools::Itertools;
 use kurbo::Shape;
-use p2d::bounding_volume::Aabb;
+use p2d::bounding_volume::{Aabb, BoundingVolume};
 use p2d::glamx::DAffine2;
 use p2d::math::Vector2;
 use piet::{RenderContext, TextLayout, TextLayoutBuilder};
@@ -520,6 +522,40 @@ impl Shapeable for TextStroke {
 
 impl Content for TextStroke {
     fn update_geometry(&mut self) {}
+
+    /// Generate bitmap images for rendering in the app.
+    ///
+    /// A larger `image_scale` value renders them in a higher than native resolution (usually set as the camera zoom).
+    /// The bounds are not scaled by it.
+    fn gen_images(
+        &self,
+        viewport: Aabb,
+        image_scale: f64,
+    ) -> Result<GeneratedContentImages, anyhow::Error> {
+        let bounds = self.bounds();
+
+        if viewport.contains(&bounds) {
+            Ok(GeneratedContentImages::Full(vec![Image::gen_with_vello(
+                |cx| self.draw_vello(cx),
+                bounds,
+                image_scale,
+            )?]))
+        } else if let Some(intersection_bounds) = viewport.intersection(&bounds) {
+            Ok(GeneratedContentImages::Partial {
+                images: vec![Image::gen_with_vello(
+                    |cx| self.draw_vello(cx),
+                    intersection_bounds,
+                    image_scale,
+                )?],
+                viewport,
+            })
+        } else {
+            Ok(GeneratedContentImages::Partial {
+                images: vec![],
+                viewport,
+            })
+        }
+    }
 }
 
 impl Drawable for TextStroke {
@@ -540,6 +576,54 @@ impl Drawable for TextStroke {
 }
 
 impl TextStroke {
+    // for now single method not inside a trait
+    fn draw_vello(&self, cx: &mut vello_cpu::RenderContext) -> anyhow::Result<()> {
+        let current_context = cx.save_current_state();
+
+        // text layout
+        // (should be) globals
+        use parley::LayoutContext;
+        let mut font_cx = parley::FontContext::new();
+        let mut layout_cx = LayoutContext::<()>::new();
+
+        let mut builder = layout_cx.ranged_builder(&mut font_cx, &self.text, 1.0, true);
+
+        builder.push_default(parley::StyleProperty::FontFamily(
+            parley::FontFamily::named(&self.text_style.font_family),
+        )); // unwrap ?
+        builder.push_default(parley::StyleProperty::FontSize(self.text_style.font_size as f32));
+        
+        // alignment : editor needed ?
+        // font weight
+        // style
+        // color
+
+        // TODO
+        let mut layout: parley::Layout<()> = builder.build(&self.text);
+        layout.break_all_lines(None);
+
+
+
+        cx.set_transform(self.affine.to_kurbo_vello());
+
+        for line in layout.lines() {
+            for item in line.items() {
+                match item {
+                    parley::PositionedLayoutItem::GlyphRun(glyph_run) => {
+                        // Render the glyph run
+                    }
+                    parley::PositionedLayoutItem::InlineBox(inline_box) => {
+                        // Render the inline box
+                    }
+                };
+            }
+        }
+
+
+        cx.restore_state(current_context);
+        Ok(())
+    }
+
     pub fn new(text: String, upper_left_pos: Vector2, text_style: TextStyle) -> Self {
         Self {
             text,

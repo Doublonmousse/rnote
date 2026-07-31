@@ -11,6 +11,7 @@ use rnote_compose::ext::{AabbExt, DAffine2Ext};
 use rnote_compose::shapes::{Rectangle, Shapeable};
 use serde::{Deserialize, Serialize};
 use std::io::{self, Cursor};
+use vello_cpu::kurbo::{Affine, Vec2};
 
 /// Px unit (96 DPI ) to Point unit ( 72 DPI ) conversion factor.
 pub const PX_TO_POINT_CONV_FACTOR: f64 = 96.0 / 72.0;
@@ -324,6 +325,8 @@ impl Image {
     where
         F: FnOnce(&cairo::Context) -> anyhow::Result<()>,
     {
+        // bounds are mut here but from non muts before ?
+        // copy ?
         bounds.ensure_positive();
         bounds.loosen(1.0);
         bounds.assert_valid()?;
@@ -387,6 +390,47 @@ impl Image {
         };
 
         Self::gen_with_cairo(cairo_draw_fn, bounds, image_scale)
+    }
+
+    /// Generates an image with a provided closure that draws onto a [vello_cpu::RenderContext].
+    pub fn gen_with_vello<F>(draw_func: F, bounds: Aabb, image_scale: f64) -> anyhow::Result<Self>
+    where
+        F: FnOnce(&mut vello_cpu::RenderContext) -> anyhow::Result<()>,
+    {
+        let mut bounds_ext = bounds.clone();
+        bounds_ext.ensure_positive();
+        bounds_ext.loosen(1.0);
+        bounds_ext.assert_valid()?;
+
+        let width_scaled = ((bounds_ext.extents()[0]) * image_scale).round() as u16;
+        let height_scaled = ((bounds_ext.extents()[1]) * image_scale).round() as u16;
+
+        let mut context = vello_cpu::RenderContext::new(width_scaled, height_scaled);
+        let mut resources = vello_cpu::Resources::new();
+
+        context.set_transform(
+            Affine::translate(Vec2::new(-bounds_ext.mins[0], -bounds_ext.mins[1]))
+                .then_scale(image_scale),
+        );
+        draw_func(&mut context)?;
+
+        let mut data: Vec<u8> = vec![0; (width_scaled as u32 * height_scaled as u32 * 4) as usize];
+        context.render_to_buffer(
+            &mut resources,
+            &mut data,
+            width_scaled,
+            height_scaled,
+            vello_cpu::RenderMode::OptimizeSpeed,
+        );
+
+        Ok(Image {
+            data: glib::Bytes::from_owned(data),
+            rectangle: Rectangle::from_p2d_aabb(bounds_ext),
+            pixel_width: width_scaled as u32,
+            pixel_height: height_scaled as u32,
+            // cairo renders to bgra8-premultiplied, but we convert it to rgba8-premultiplied
+            memory_format: ImageMemoryFormat::R8g8b8a8Premultiplied,
+        })
     }
 }
 

@@ -96,6 +96,7 @@ url = "2.5"
 usvg = "0.47.0"
 winresource = "0.1.20"
 xmlwriter = "0.1.0"
+vello_cpu = "0.0.9"
 
 [patch.crates-io]
 
