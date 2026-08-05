@@ -8,6 +8,7 @@ use kurbo::Shape;
 use p2d::bounding_volume::{Aabb, BoundingVolume};
 use p2d::glamx::DAffine2;
 use p2d::math::Vector2;
+use parley::{Brush, FontWeight};
 use piet::{RenderContext, TextLayout, TextLayoutBuilder};
 use rnote_compose::Transformable;
 use rnote_compose::ext::{AabbExt, DAffine2Ext, Vector2Ext};
@@ -15,6 +16,7 @@ use rnote_compose::shapes::Shapeable;
 use rnote_compose::{Color, color};
 use serde::{Deserialize, Serialize};
 use std::ops::Range;
+use std::println;
 use tracing::error;
 use unicode_segmentation::{GraphemeCursor, UnicodeSegmentation};
 
@@ -533,17 +535,18 @@ impl Content for TextStroke {
         image_scale: f64,
     ) -> Result<GeneratedContentImages, anyhow::Error> {
         let bounds = self.bounds();
+        println!("gen textstroke with vello");
 
         if viewport.contains(&bounds) {
             Ok(GeneratedContentImages::Full(vec![Image::gen_with_vello(
-                |cx| self.draw_vello(cx),
+                |cx, resources| self.draw_vello(cx, resources),
                 bounds,
                 image_scale,
             )?]))
         } else if let Some(intersection_bounds) = viewport.intersection(&bounds) {
             Ok(GeneratedContentImages::Partial {
                 images: vec![Image::gen_with_vello(
-                    |cx| self.draw_vello(cx),
+                    |cx, resources| self.draw_vello(cx, resources),
                     intersection_bounds,
                     image_scale,
                 )?],
@@ -577,48 +580,86 @@ impl Drawable for TextStroke {
 
 impl TextStroke {
     // for now single method not inside a trait
-    fn draw_vello(&self, cx: &mut vello_cpu::RenderContext) -> anyhow::Result<()> {
+    fn draw_vello(
+        &self,
+        cx: &mut vello_cpu::RenderContext,
+        resources: &mut vello_cpu::Resources,
+    ) -> anyhow::Result<()> {
         let current_context = cx.save_current_state();
 
         // text layout
-        // (should be) globals
+        // (should be) globals ideally
         use parley::LayoutContext;
         let mut font_cx = parley::FontContext::new();
         let mut layout_cx = LayoutContext::<()>::new();
 
-        let mut builder = layout_cx.ranged_builder(&mut font_cx, &self.text, 1.0, true);
+        let mut builder = layout_cx.ranged_builder(&mut font_cx, &self.text, 1.0, false);
 
         builder.push_default(parley::StyleProperty::FontFamily(
             parley::FontFamily::named(&self.text_style.font_family),
         )); // unwrap ?
-        builder.push_default(parley::StyleProperty::FontSize(self.text_style.font_size as f32));
-        
-        // alignment : editor needed ?
+        builder.push_default(parley::StyleProperty::FontSize(
+            self.text_style.font_size as f32,
+        ));
+
         // font weight
+        // not sure what the value should correspond to this here
+        builder.push_default(parley::StyleProperty::FontWeight(FontWeight::new(
+            self.text_style.font_weight as f32 / 500.0,
+        )));
         // style
-        // color
+        // or italic todo from enum value
+        builder.push_default(parley::StyleProperty::FontStyle(parley::FontStyle::Normal));
+        // color : where ?
+
+        // push ranged
 
         // TODO
         let mut layout: parley::Layout<()> = builder.build(&self.text);
-        layout.break_all_lines(None);
+        layout.break_all_lines(self.text_style.max_width.and_then(|x| Some(x as f32)));
+        // too large/too small ?
+        // This is probably what we want to match _.max_width ?
 
+        // alignment :
+        //layout.align(alignment, options);
 
-
-        cx.set_transform(self.affine.to_kurbo_vello());
+        cx.set_paint(self.text_style.color.to_vello());
 
         for line in layout.lines() {
             for item in line.items() {
                 match item {
                     parley::PositionedLayoutItem::GlyphRun(glyph_run) => {
                         // Render the glyph run
+                        let mut run_x = glyph_run.offset();
+                        let run_y = glyph_run.baseline();
+                        let glyphs = glyph_run.glyphs().map(move |glyph| {
+                            let glyph_x = run_x + glyph.x;
+                            let glyph_y = run_y - glyph.y;
+                            run_x += glyph.advance;
+
+                            vello_cpu::Glyph {
+                                id: glyph.id,
+                                x: glyph_x,
+                                y: glyph_y,
+                            }
+                        });
+
+                        let run = glyph_run.run();
+                        cx.glyph_run(resources, run.font())
+                            .font_size(run.font_size())
+                            .hint(false)
+                            .atlas_cache(false)
+                            .glyph_transform(self.affine.to_kurbo_vello())
+                            .fill_glyphs(glyphs);
                     }
                     parley::PositionedLayoutItem::InlineBox(inline_box) => {
                         // Render the inline box
+                        println!("box not rendered yet"); // would be a rectangle fill
+                        // see https://github.com/linebender/parley/blob/f132cbd258be9f315bf45036a6683d926b844d68/examples/vello_cpu_render/src/main.rs#L132-L138
                     }
                 };
             }
         }
-
 
         cx.restore_state(current_context);
         Ok(())

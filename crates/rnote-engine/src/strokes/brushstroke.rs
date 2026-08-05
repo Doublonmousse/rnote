@@ -75,9 +75,8 @@ impl Content for BrushStroke {
 
                     // let's do this little by little
                     // let's add a draw composed method that renders to a vello render component instead here
-                    println!("image scale {:?}", image_scale);
                     let image = Image::gen_with_vello(
-                        |cx| {
+                        |cx,_| {
                             self.path.draw_composed_vello(cx, options);
                             Ok(())
                         },

@@ -395,7 +395,7 @@ impl Image {
     /// Generates an image with a provided closure that draws onto a [vello_cpu::RenderContext].
     pub fn gen_with_vello<F>(draw_func: F, bounds: Aabb, image_scale: f64) -> anyhow::Result<Self>
     where
-        F: FnOnce(&mut vello_cpu::RenderContext) -> anyhow::Result<()>,
+        F: FnOnce(&mut vello_cpu::RenderContext, &mut vello_cpu::Resources) -> anyhow::Result<()>,
     {
         let mut bounds_ext = bounds.clone();
         bounds_ext.ensure_positive();
@@ -412,7 +412,7 @@ impl Image {
             Affine::translate(Vec2::new(-bounds_ext.mins[0], -bounds_ext.mins[1]))
                 .then_scale(image_scale),
         );
-        draw_func(&mut context)?;
+        draw_func(&mut context, &mut resources)?;
 
         let mut data: Vec<u8> = vec![0; (width_scaled as u32 * height_scaled as u32 * 4) as usize];
         context.render_to_buffer(
